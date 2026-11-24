@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام الساعات الإضافية — هركو</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; background: #F5F5F0; min-height: 100vh; }
+body.lang-ar, body.lang-ur { direction: rtl; }
+body.lang-en { direction: ltr; }
+
+/* ======= PRINT STYLES ======= */
+@media print {
+  body { background: white !important; font-size: 10pt; }
+  /* Hide everything by default */
+  body > * { display: none !important; }
+  /* Show only the print target */
+  #printTarget { display: block !important; }
+  @page { size: A4 portrait; margin: 12mm; }
+  .pdf-header { display: flex !important; }
+  table { font-size: 9pt; width: 100%; }
+  th, td { padding: 5px 8px !important; }
+  .tbl-wrap { overflow: visible !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+  .card-header { background: #f5f5f5 !important; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .worker-section-header { display: block !important; }
+}
+#printTarget { display: none; }
+.pdf-signature { display: none; }
+@media print {
+  .pdf-signature {
+    display: block !important;
+    margin-top: 30px;
+    padding: 16px 20px;
+    border-top: 2px solid #1a3d6b;
+    background: #f9f9f9;
+    border-radius: 0 0 8px 8px;
+  }
+  .pdf-signature-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .pdf-signature-item { font-size: 10pt; color: #1a1a1a; }
+  .pdf-signature-label { font-size: 9pt; color: #888; margin-bottom: 3px; }
+  .pdf-signature-value { font-size: 11pt; font-weight: 700; color: #1a3d6b; }
+}
+.print-only { display: none; }
+.worker-section-header { display: none; background: #E6F1FB; border-radius: 8px; padding: 10px 16px; margin: 12px 0 8px; }
+.worker-section-header h3 { font-size: 14pt; font-weight: 700; color: #185FA5; margin: 0; }
+.worker-section-header p { font-size: 10pt; color: #444; margin: 3px 0 0; }
+
+/* LANG BAR */
+.bsdel { background: #FCEBEB; color: #A32D2D; border: none; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; font-family: inherit; }
+.bsdel:hover { background: #F7C1C1; }
+input[list] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24'%3E%3Cpath fill='%23aaa' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: left 10px center; }
+.lang-bar { background: #1a1a1a; padding: 7px 1.5rem; display: flex; align-items: center; gap: 6px; justify-content: center; }
+.lang-bar-label { color: rgba(255,255,255,0.4); font-size: 12px; }
+.lang-btn { background: transparent; border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.65); border-radius: 20px; padding: 4px 16px; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.lang-btn.active { background: #185FA5; border-color: #185FA5; color: white; font-weight: 600; }
+
+/* PDF HEADER */
+.pdf-header { display: none; background: #1a3d6b; color: white; padding: 12px 20px; align-items: center; justify-content: space-between; border-radius: 8px; margin-bottom: 14px; }
+.pdf-header-logo img { height: 40px; background: white; padding: 4px; border-radius: 6px; }
+.pdf-header-info { text-align: center; flex: 1; }
+.pdf-header-company { font-size: 14pt; font-weight: bold; margin-bottom: 3px; }
+.pdf-header-title { font-size: 11pt; opacity: 0.9; }
+.pdf-header-date { font-size: 8pt; opacity: 0.7; margin-top: 3px; }
+.pdf-header-right { font-size: 9pt; opacity: 0.75; text-align: left; }
+
+/* LOGIN */
+.login-screen { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 38px); padding: 2rem; }
+.login-card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 2.5rem; width: 100%; max-width: 400px; }
+.login-logo { text-align: center; margin-bottom: 2rem; }
+.login-logo-icon { width: 60px; height: 60px; background: #185FA5; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+.login-logo-icon svg { width: 30px; height: 30px; fill: white; }
+.login-logo h1 { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+.login-logo p { font-size: 13px; color: #888; margin-top: 4px; }
+.login-tabs { display: flex; background: #F5F5F0; border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; }
+.login-tab { flex: 1; padding: 8px; text-align: center; font-size: 14px; border-radius: 8px; cursor: pointer; color: #888; }
+.login-tab.active { background: white; color: #185FA5; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.field-label { font-size: 12px; color: #666; margin-bottom: 6px; display: block; font-weight: 500; }
+.field-group { margin-bottom: 1rem; }
+select, input[type="text"], input[type="password"], input[type="date"], input[type="number"] {
+  width: 100%; padding: 10px 14px; font-size: 14px; border-radius: 10px;
+  border: 1.5px solid #E5E5E5; background: white; color: #1a1a1a; font-family: inherit;
+}
+body.lang-en select, body.lang-en input { direction: ltr; }
+body.lang-ar select, body.lang-ar input, body.lang-ur select, body.lang-ur input { direction: rtl; }
+select:focus, input:focus { outline: none; border-color: #185FA5; }
+.btn-primary { width: 100%; padding: 11px; background: #185FA5; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-primary:hover { background: #0C447C; }
+.hint { font-size: 11px; color: #aaa; text-align: center; margin-top: 1rem; }
+
+/* NAV */
+.nav { background: white; border-bottom: 1px solid #EAEAEA; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.nav-brand { display: flex; align-items: center; gap: 10px; }
+.nav-icon { width: 34px; height: 34px; background: #185FA5; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.nav-icon svg { width: 18px; height: 18px; fill: white; }
+.nav-title { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+.nav-user { display: flex; align-items: center; gap: 12px; }
+.nav-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+.nb-w { background: #E6F1FB; color: #185FA5; }
+.nb-s { background: #EAF3DE; color: #3B6D11; }
+.nb-t { background: #FAEEDA; color: #854F0B; }
+.nav-username { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+.nav-logout { font-size: 12px; color: #888; cursor: pointer; padding: 5px 10px; border: 1px solid #E5E5E5; border-radius: 8px; }
+
+/* MAIN TABS */
+.main-tabs { display: flex; border-bottom: 1px solid #EAEAEA; background: white; padding: 0 1.5rem; overflow-x: auto; }
+.main-tab { padding: 14px 18px; font-size: 14px; cursor: pointer; color: #888; border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 500; white-space: nowrap; }
+.main-tab.active { color: #185FA5; border-bottom-color: #185FA5; font-weight: 600; }
+
+/* CONTENT */
+.content { padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
+.page { display: none; } .page.active { display: block; }
+.tab-section { display: none; } .tab-section.active { display: block; }
+
+/* STATS */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+.stat-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #EAEAEA; }
+.stat-label { font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; }
+.stat-value { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+.stat-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+/* CARDS */
+.card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #EAEAEA; overflow: hidden; margin-bottom: 1.5rem; }
+.card-header { padding: 1rem 1.25rem; border-bottom: 1px solid #EAEAEA; display: flex; align-items: center; justify-content: space-between; background: #FAFAFA; flex-wrap: wrap; gap: 8px; }
+.card-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+.card-body { padding: 1.25rem; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* TABLE */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 580px; }
+th { padding: 10px 12px; background: #FAFAFA; color: #666; font-weight: 600; font-size: 12px; border-bottom: 1px solid #EAEAEA; white-space: nowrap; }
+body.lang-ar th, body.lang-ur th { text-align: right; }
+body.lang-en th { text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #F0F0F0; color: #1a1a1a; vertical-align: middle; }
+body.lang-ar td, body.lang-ur td { text-align: right; }
+body.lang-en td { text-align: left; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #FAFAFA; }
+.fri-row td { background: #FFF8E6 !important; border-right: 3px solid #E8A800; }
+.fri-badge { display:inline-flex;align-items:center;gap:5px;background:#FFF3CC;color:#8A6000;border:1px solid #E8A800;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700; }
+.totals-row td { background: #F0F7FF !important; font-weight: 700; border-top: 2px solid #B5D4F4; font-size: 13px; color: #185FA5; }
+.tp { display: inline-flex; align-items: center; border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+.tp-b { background: #E6F1FB; color: #185FA5; }
+.tp-g { background: #EAF3DE; color: #3B6D11; }
+.tp-a { background: #FAEEDA; color: #854F0B; }
+
+/* BADGES */
+.badge { display: inline-flex; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.st-p { background: #FAEEDA; color: #854F0B; }
+.st-a { background: #EAF3DE; color: #3B6D11; }
+.st-r { background: #FCEBEB; color: #A32D2D; }
+.rl-w { background: #E6F1FB; color: #185FA5; }
+.rl-t { background: #FAEEDA; color: #854F0B; }
+.rl-s { background: #EAF3DE; color: #3B6D11; }
+
+/* BUTTONS */
+.btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; border: none; font-family: inherit; }
+.btn-blue { background: #185FA5; color: white; }
+.bsg { background: #EAF3DE; color: #3B6D11; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; font-family: inherit; }
+.bsr { background: #FCEBEB; color: #A32D2D; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; font-family: inherit; }
+.bsa { background: #FAEEDA; color: #854F0B; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; font-weight: 600; font-family: inherit; }
+.bsg:hover { background: #C0DD97; } .bsr:hover { background: #F7C1C1; } .bsa:hover { background: #FAC775; }
+.btn-outline { background: transparent; border: 1px solid #E5E5E5; border-radius: 8px; padding: 6px 14px; font-size: 12px; color: #666; cursor: pointer; font-family: inherit; font-weight: 500; }
+.btn-pdf { background: #C0392B; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
+.btn-excel { background: #1e7e34; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; font-family: inherit; font-weight: 600; }
+.action-btns { display: flex; gap: 4px; flex-wrap: wrap; }
+body.lang-ar .action-btns, body.lang-ur .action-btns { justify-content: flex-end; }
+
+/* WORKERS GRID */
+.workers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.worker-card { background: white; border: 1.5px solid #EAEAEA; border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.2s; }
+.worker-card:hover { border-color: #185FA5; }
+.worker-card.selected { border-color: #185FA5; background: #F0F7FF; }
+.worker-avatar { width: 42px; height: 42px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #185FA5; margin-bottom: 8px; }
+.worker-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.worker-hours { font-size: 11px; color: #888; margin-top: 4px; }
+.worker-pending { font-size: 10px; background: #FAEEDA; color: #854F0B; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 5px; font-weight: 600; }
+
+/* PERIOD BAR */
+.period-bar { background: white; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; border: 1px solid #EAEAEA; }
+.period-label { font-size: 11px; color: #888; font-weight: 500; }
+.period-value { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-top: 2px; }
+.period-nav { display: flex; gap: 8px; }
+.period-btn { background: #F5F5F0; border: 1px solid #E5E5E5; border-radius: 8px; padding: 6px 14px; font-size: 12px; cursor: pointer; color: #666; font-family: inherit; font-weight: 500; }
+
+/* DATE LOCKED */
+.date-locked { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1.5px solid #E5E5E5; border-radius: 10px; background: #F5F5F0; }
+.date-locked-text { font-size: 13px; color: #1a1a1a; font-weight: 500; flex: 1; }
+.date-locked-badge { font-size: 10px; background: #E6F1FB; color: #185FA5; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+
+/* ADD ENTRY */
+.add-entry-card { background: white; border: 1px solid #EAEAEA; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.add-entry-title { font-size: 15px; font-weight: 600; margin-bottom: 1.25rem; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+.add-entry-title::before { content:""; width:4px; height:18px; background:#185FA5; border-radius:2px; display:inline-block; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.checkbox-group { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1.5px solid #E5E5E5; border-radius: 10px; cursor: pointer; width: fit-content; }
+.checkbox-group input { width: 16px; height: 16px; cursor: pointer; margin: 0; }
+.checkbox-group label { font-size: 13px; color: #1a1a1a; cursor: pointer; font-weight: 500; }
+.btn-add { background: #185FA5; color: white; border: none; border-radius: 10px; padding: 11px 24px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px; font-family: inherit; }
+
+/* MANAGE */
+.manage-form { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; margin-bottom: 1.5rem; }
+.manage-form .field-group { margin: 0; }
+.section-header { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 0.875rem; }
+
+/* REPORTS */
+.report-filters { background: white; border: 1px solid #EAEAEA; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.report-type-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.rtype-btn { padding: 7px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; font-weight: 500; border: 1.5px solid #E5E5E5; background: white; color: #666; font-family: inherit; }
+.rtype-btn.active { background: #185FA5; border-color: #185FA5; color: white; font-weight: 600; }
+.workers-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 10px; }
+.wcheck { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1.5px solid #E5E5E5; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+.wcheck input { width: 15px; height: 15px; cursor: pointer; margin: 0; }
+.wcheck label { font-size: 13px; cursor: pointer; color: #1a1a1a; }
+.wcheck.checked { border-color: #185FA5; background: #F0F7FF; }
+.report-result-header { background: linear-gradient(135deg, #1a3d6b 0%, #185FA5 100%); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; color: white; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.report-result-title { font-size: 16px; font-weight: 600; }
+.report-result-sub { font-size: 12px; opacity: 0.8; margin-top: 3px; }
+.report-summary-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+.r-pill { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 600; }
+.no-results { padding: 3rem; text-align: center; color: #aaa; font-size: 14px; background: white; border-radius: 12px; border: 1px solid #EAEAEA; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+.modal-box { background: white; border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.15); padding: 2rem; width: 100%; max-width: 420px; }
+.modal-title { font-size: 17px; font-weight: 700; color: #1a1a1a; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
+.modal-title-icon { width: 32px; height: 32px; background: #E6F1FB; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 1.5rem; }
+body.lang-en .modal-actions { justify-content: flex-start; }
+.modal-cancel { background: #F5F5F0; border: 1px solid #E5E5E5; border-radius: 10px; padding: 10px 20px; font-size: 14px; cursor: pointer; color: #1a1a1a; font-family: inherit; font-weight: 500; }
+.modal-confirm { background: #185FA5; border: none; border-radius: 10px; padding: 10px 20px; font-size: 14px; cursor: pointer; color: white; font-weight: 600; font-family: inherit; }
+.modal-confirm.danger { background: #A32D2D; }
+
+.empty-state { padding: 3rem; text-align: center; color: #aaa; font-size: 14px; }
+.empty-icon { font-size: 36px; margin-bottom: 8px; }
+.food-yes { color: #3B6D11; font-size: 15px; font-weight: 700; }
+.food-no { color: #ccc; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 10px; font-size: 13px; z-index: 9999; display: none; font-weight: 500; }
+.toast.show { display: block; animation: fadeup 0.2s ease; }
+@keyframes fadeup { from{opacity:0;transform:translateX(-50%) translateY(10px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; }
+.loading-overlay.show { display: flex; }
+.loading-spinner { width: 40px; height: 40px; border: 4px solid #E5E5E5; border-top-color: #185FA5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="lang-ar">
+
+<div class="lang-bar">
+  <span class="lang-bar-label" id="llabel">اللغة:</span>
+  <button class="lang-btn active" id="lb-ar" onclick="setLang('ar')">العربية</button>
+  <button class="lang-btn" id="lb-en" onclick="setLang('en')">English</button>
+  <button class="lang-btn" id="lb-ur" onclick="setLang('ur')">اردو</button>
+</div>
+
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+      <h1 id="lTitle">نظام الساعات الإضافية</h1>
+      <p id="lSub">شركة مصنع هركو للتبريد المحدودة</p>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="tabW" onclick="setLoginType('worker')">موظف</div>
+      <div class="login-tab" id="tabS" onclick="setLoginType('supervisor')">مشرف</div>
+    </div>
+    <div id="wSelectGroup" class="field-group">
+      <label class="field-label" id="lSelectW">اختر اسمك</label>
+      <select id="workerSelect"><option value="">--</option></select>
+    </div>
+    <div id="sPassGroup" class="field-group" style="display:none;">
+      <label class="field-label" id="lSPass">كلمة المرور</label>
+      <input type="password" id="supervisorPass" />
+    </div>
+    <div id="wPinGroup" class="field-group">
+      <label class="field-label" id="lPin">رمز الدخول</label>
+      <input type="password" id="workerPass" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()" id="btnLogin">دخول</button>
+    <p class="hint" id="lHint">موظفون: رمز 1234</p>
+  </div>
+</div>
+
+<div id="mainApp" style="display:none;">
+  <div class="nav no-print">
+    <div class="nav-brand">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+      <span class="nav-title" id="navTitle">هركو — الساعات الإضافية</span>
+    </div>
+    <div class="nav-user">
+      <span class="nav-badge" id="userBadge"></span>
+      <span class="nav-username" id="userName"></span>
+      <span class="nav-logout" onclick="logout()" id="btnLogout">خروج</span>
+    </div>
+  </div>
+
+  <!-- WORKER PAGE -->
+  <div id="workerPage" class="page">
+    <div class="main-tabs no-print">
+      <div class="main-tab active" onclick="showWorkerTab('entries')" id="wtab1">سجلاتي</div>
+      <div class="main-tab" onclick="showWorkerTab('myreports')" id="wtab2">تقاريري</div>
+    </div>
+    <div class="content">
+      <div id="wEntries" class="tab-section active">
+        <!-- PDF HEADER (print only) -->
+        <div class="pdf-header print-only" id="wPdfHeader">
+          <div class="pdf-header-logo"><img id="wPdfLogo" src="" alt="HRCO"/></div>
+          <div class="pdf-header-info">
+            <div class="pdf-header-company" id="wPdfCompany">شركة مصنع هركو للتبريد المحدودة</div>
+            <div class="pdf-header-title" id="wPdfTitle">تقرير الساعات الإضافية</div>
+            <div class="pdf-header-date" id="wPdfDate"></div>
+          </div>
+          <div class="pdf-header-right" id="wPdfRight"></div>
+        </div>
+        <div class="period-bar no-print">
+          <div><div class="period-label" id="wPLabel">الفترة الحالية</div><div class="period-value" id="workerPeriod"></div></div>
+          <div class="period-nav">
+            <button class="period-btn" onclick="changePeriod(-1)" id="btnPW">◀ السابقة</button>
+            <button class="period-btn" onclick="changePeriod(1)" id="btnNW">التالية ▶</button>
+          </div>
+        </div>
+        <div class="stats-row no-print">
+          <div class="stat-card"><div class="stat-label" id="ws1l">إجمالي الساعات</div><div class="stat-value" id="wTotalH">0</div><div class="stat-sub" id="ws1s">هذه الفترة</div></div>
+          <div class="stat-card"><div class="stat-label" id="ws2l">ساعات معتمدة</div><div class="stat-value" id="wApprH">0</div><div class="stat-sub" id="ws2s">موافق عليها</div></div>
+          <div class="stat-card"><div class="stat-label" id="ws3l">أيام بدل طعام</div><div class="stat-value" id="wFoodD">0</div><div class="stat-sub" id="ws3s">هذه الفترة</div></div>
+        </div>
+        <div class="add-entry-card no-print">
+          <div class="add-entry-title" id="addTitle">إضافة ساعات إضافية</div>
+          <div class="form-row">
+            <div class="field-group" style="margin:0;">
+              <label class="field-label" id="lDate">التاريخ</label>
+              <select id="entryDate" style="direction:rtl;"></select>
+            </div>
+            <div class="field-group" style="margin:0;"><label class="field-label" id="lHours">عدد الساعات</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" id="entryHours" min="0" max="24" step="0.5" style="flex:1;" oninput="clearTimePicker()" placeholder="0"/>
+                <span style="font-size:11px;color:#888;white-space:nowrap;" id="lOrTime">أو</span>
+              </div>
+            </div>
+          </div>
+          <!-- من / إلى -->
+          <div class="form-row" style="margin-bottom:12px;">
+            <div class="field-group" style="margin:0;">
+              <label class="field-label" id="lFromTime">من الساعة</label>
+              <input type="time" id="entryFrom" onchange="calcHoursFromTime()" style="direction:ltr;"/>
+            </div>
+            <div class="field-group" style="margin:0;">
+              <label class="field-label" id="lToTime">إلى الساعة</label>
+              <input type="time" id="entryTo" onchange="calcHoursFromTime()" style="direction:ltr;"/>
+            </div>
+          </div>
+          <!-- hours preview -->
+          <div id="hoursPreview" style="display:none;background:#E6F1FB;border-radius:8px;padding:8px 14px;margin-bottom:10px;font-size:13px;color:#185FA5;font-weight:600;"></div>
+          <div class="form-row">
+            <div class="field-group" style="margin:0;"><label class="field-label" id="lProject">اسم المشروع</label>
+              <input type="text" id="entryProject" list="projectsList" autocomplete="off"/>
+              <datalist id="projectsList"></datalist>
+            </div>
+            <div class="field-group" style="margin:0;"><label class="field-label" id="lCity">المدينة</label><select id="entryCity"></select></div>
+          </div>
+          <div class="checkbox-group"><input type="checkbox" id="entryFood"/><label for="entryFood" id="lFood">يوجد بدل طعام لهذا اليوم</label></div>
+          <div class="field-group" style="margin-top:10px;margin-bottom:0;">
+            <label class="field-label" id="lNotes">ملاحظات (اختياري)</label>
+            <input type="text" id="entryNotes" />
+          </div>
+          <br><button class="btn-add" onclick="addEntry()" id="btnAddE">إضافة السجل</button>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="wTableT">سجلات الساعات الإضافية</span>
+            <div class="card-actions no-print">
+              <button class="btn-excel" onclick="exportWExcel()">Excel ↓</button>
+              <button class="btn-pdf" onclick="printWorkerTable()">🖨 PDF</button>
+            </div>
+          </div>
+          <div id="wTableBody"><div class="empty-state"><div class="empty-icon">📋</div><span id="emptyW">لا توجد سجلات بعد.</span></div></div>
+        </div>
+      </div>
+      <div id="wMyReports" class="tab-section">
+        <div id="myReportContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPERVISOR PAGE -->
+  <div id="supervisorPage" class="page">
+    <div class="main-tabs no-print">
+      <div class="main-tab active" id="sTab1" onclick="showSupTab('overview')">المراقبة والاعتماد</div>
+      <div class="main-tab" id="sTab2" onclick="showSupTab('reports')">التقارير</div>
+      <div class="main-tab" id="sTab3" onclick="showSupTab('manage')">إدارة الموظفين</div>
+    </div>
+    <div class="content">
+      <div id="supOverview" class="tab-section active">
+        <!-- PDF HEADER (print only) -->
+        <div class="pdf-header print-only" id="sPdfHeader">
+          <div class="pdf-header-logo"><img id="sPdfLogo" src="" alt="HRCO"/></div>
+          <div class="pdf-header-info">
+            <div class="pdf-header-company" id="sPdfCompany">شركة مصنع هركو للتبريد المحدودة</div>
+            <div class="pdf-header-title" id="sPdfTitle">تقرير الساعات الإضافية</div>
+            <div class="pdf-header-date" id="sPdfDate"></div>
+          </div>
+          <div class="pdf-header-right" id="sPdfRight"></div>
+        </div>
+        <div class="period-bar no-print">
+          <div><div class="period-label" id="sPLabel">الفترة الحالية</div><div class="period-value" id="supPeriod"></div></div>
+          <div class="period-nav">
+            <button class="period-btn" onclick="changePeriod(-1)" id="btnPS">◀ السابقة</button>
+            <button class="period-btn" onclick="changePeriod(1)" id="btnNS">التالية ▶</button>
+          </div>
+        </div>
+        <div class="stats-row no-print">
+          <div class="stat-card"><div class="stat-label" id="ss1l">ساعات معتمدة</div><div class="stat-value" id="sTotH">0</div><div class="stat-sub" id="ss1s">جميع الموظفين</div></div>
+          <div class="stat-card"><div class="stat-label" id="ss2l">بانتظار الموافقة</div><div class="stat-value" id="sPendC">0</div><div class="stat-sub" id="ss2s">سجل</div></div>
+          <div class="stat-card"><div class="stat-label" id="ss3l">معتمدة</div><div class="stat-value" id="sApprC">0</div><div class="stat-sub" id="ss3s">سجل</div></div>
+        </div>
+
+        <!-- WORKER MULTI-SELECT FILTER -->
+        <div class="no-print" style="background:white;border:1px solid #EAEAEA;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;" id="empHeader">اختر الموظفين</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-outline" onclick="soSelectAll(true)" id="soSelAll" style="font-size:12px;">تحديد الكل</button>
+              <button class="btn-outline" onclick="soSelectAll(false)" id="soSelNone" style="font-size:12px;">إلغاء الكل</button>
+            </div>
+          </div>
+          <div id="soWorkersCheck" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;"></div>
+        </div>
+
+        <!-- TABLE 1: PENDING -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-header">
+            <span class="card-title" id="sPendTitle">طلبات قيد الاعتماد</span>
+            <div class="card-actions no-print">
+              <button class="btn-excel" onclick="exportSExcel('pending')" id="btnExPend">Excel ↓</button>
+              <button class="btn-pdf" onclick="printSOTable('pending')" id="btnPdfPend">🖨 PDF</button>
+            </div>
+          </div>
+          <div id="sPendBody"><div class="empty-state"><div class="empty-icon">⏳</div><span id="emptyPend">لا توجد طلبات معلقة.</span></div></div>
+        </div>
+
+        <!-- TABLE 2: APPROVED -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" id="sApprTitle">طلبات تم اعتمادها</span>
+            <div class="card-actions no-print">
+              <button class="btn-excel" onclick="exportSExcel('approved')" id="btnExAppr">Excel ↓</button>
+              <button class="btn-pdf" onclick="printSOTable('approved')" id="btnPdfAppr">🖨 PDF</button>
+            </div>
+          </div>
+          <div id="sApprBody"><div class="empty-state"><div class="empty-icon">✅</div><span id="emptyAppr">لا توجد طلبات معتمدة.</span></div></div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="supReports" class="tab-section">
+        <div class="report-filters no-print">
+          <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:1rem;" id="rTitle">إعداد التقرير</div>
+          <div style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px;" id="rTypeLabel">نوع التقرير</div>
+          <div class="report-type-tabs">
+            <button class="rtype-btn active" onclick="setRType('daily')" id="rdaily">يومي</button>
+            <button class="rtype-btn" onclick="setRType('weekly')" id="rweekly">أسبوعي</button>
+            <button class="rtype-btn" onclick="setRType('monthly')" id="rmonthly">شهري</button>
+            <button class="rtype-btn" onclick="setRType('yearly')" id="ryearly">سنوي</button>
+            <button class="rtype-btn" onclick="setRType('custom')" id="rcustom">فترة محددة</button>
+          </div>
+          <div id="rDateFilters" style="margin-top:1rem;"></div>
+          <div style="font-size:12px;color:#888;font-weight:500;margin-top:1rem;margin-bottom:8px;" id="rWFilter">الموظفون</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button class="btn-outline" onclick="selectAllWorkers(true)" id="btnSelAll">تحديد الكل</button>
+            <button class="btn-outline" onclick="selectAllWorkers(false)" id="btnSelNone">إلغاء الكل</button>
+          </div>
+          <div class="workers-checkboxes" id="rWorkersCheck"></div>
+          <div style="margin-top:1.25rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-blue" onclick="generateReport()" id="btnGenRep">إنشاء التقرير</button>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:#FFF8E6;border:1.5px solid #E8A800;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:#8A6000;">
+              <input type="checkbox" id="friFilter" onchange="generateReport()" style="width:15px;height:15px;cursor:pointer;"/>
+              🟡 أيام الجمعة فقط
+            </label>
+          </div>
+        </div>
+        <div id="reportResult" style="display:none;">
+          <!-- PDF HEADER -->
+          <div class="pdf-header print-only" id="rPdfHeader">
+            <div class="pdf-header-logo"><img id="rPdfLogo" src="" alt="HRCO"/></div>
+            <div class="pdf-header-info">
+              <div class="pdf-header-company" id="rPdfCompany">شركة مصنع هركو للتبريد المحدودة</div>
+              <div class="pdf-header-title" id="rPdfTitle"></div>
+              <div class="pdf-header-date" id="rPdfDate"></div>
+            </div>
+            <div class="pdf-header-right" id="rPdfRight"></div>
+          </div>
+          <div class="report-result-header no-print">
+            <div>
+              <div class="report-result-title" id="repTitle">تقرير الساعات الإضافية</div>
+              <div class="report-result-sub" id="repSub"></div>
+            </div>
+            <div class="report-summary-pills" id="repPills"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title" id="repTableTitle">نتائج التقرير</span>
+              <div class="card-actions no-print">
+                <button class="btn-excel" onclick="exportRepExcel()">Excel ↓</button>
+                <button class="btn-pdf" onclick="printReport()">🖨 PDF</button>
+              </div>
+            </div>
+            <div id="repTableBody"></div>
+          </div>
+        </div>
+        <div id="noReport" class="no-results">
+          <div style="font-size:36px;margin-bottom:12px;">📊</div>
+          <div id="noRepMsg">اختر نوع التقرير والموظفين ثم اضغط "إنشاء التقرير"</div>
+        </div>
+      </div>
+
+      <!-- MANAGE -->
+      <div id="supManage" class="tab-section">
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div class="card-header"><span class="card-title" id="addWTitle">إضافة موظف جديد</span></div>
+          <div class="card-body">
+            <div class="manage-form">
+              <div class="field-group"><label class="field-label" id="lNewName">الاسم الكامل</label><input type="text" id="newWName"/></div>
+              <div class="field-group"><label class="field-label" id="lNewRole">الصفة الوظيفية</label>
+                <select id="newWRole"><option value="worker" id="rW">عامل</option><option value="technician" id="rT">فني</option><option value="supervisor" id="rS">مشرف</option></select>
+              </div>
+              <div class="field-group"><label class="field-label" id="lNewPin">رمز الدخول (4 أرقام)</label><input type="text" id="newWPin" maxlength="4"/></div>
+              <div><button class="btn btn-blue" onclick="addWorker()" id="btnAW">إضافة</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title" id="wListTitle">قائمة الموظفين</span><span style="font-size:12px;color:#888;" id="wCount"></span></div>
+          <div id="wManageTable"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">✏️</div><span id="eModalT">تعديل السجل</span></div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLDate">التاريخ</label><input type="date" id="editDate"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLHours">الساعات</label><input type="number" id="editHours" min="0" max="24" step="0.5" oninput="clearEditTime()"/></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLFromTime">من الساعة</label><input type="time" id="editFrom" style="direction:ltr;" onchange="calcEditHours()"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLToTime">إلى الساعة</label><input type="time" id="editTo" style="direction:ltr;" onchange="calcEditHours()"/></div>
+    </div>
+    <div id="editHoursPreview" style="display:none;background:#E6F1FB;border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:12px;color:#185FA5;font-weight:600;"></div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLProj">المشروع</label>
+        <input type="text" id="editProject" list="projectsList" autocomplete="off"/>
+      </div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLCity">المدينة</label><select id="editCity"></select></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="eLStatus">الحالة</label>
+        <select id="editStatus"><option value="pending" id="eStP">بانتظار</option><option value="approved" id="eStA">معتمد</option><option value="rejected" id="eStR">مرفوض</option></select>
+      </div>
+      <div class="field-group" style="margin:0;display:flex;align-items:flex-end;">
+        <div class="checkbox-group" style="width:100%;"><input type="checkbox" id="editFood"/><label for="editFood" id="eLFood">بدل طعام</label></div>
+      </div>
+    </div>
+    <div class="field-group" style="margin-bottom:0;">
+      <label class="field-label" id="eLNotes">ملاحظات</label>
+      <input type="text" id="editNotes"/>
+    </div>
+    <div id="editApprovedInfo" style="display:none;background:#EAF3DE;border-radius:8px;padding:6px 12px;font-size:11px;color:#3B6D11;margin-top:8px;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeEditModal()" id="eCancelB">إلغاء</button>
+      <button class="modal-confirm" onclick="confirmEdit()" id="eConfirmB">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORKER EDIT MODAL -->
+<div id="workerEditModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">✏️</div><span id="weModalT">تعديل السجل</span></div>
+    <div style="background:#FAEEDA;border-radius:8px;padding:8px 12px;font-size:12px;color:#854F0B;margin-bottom:12px;" id="weNote">
+      ⚠️ يمكنك التعديل خلال يومين فقط من تاريخ الإضافة
+    </div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLDate">التاريخ</label><select id="weDate" style="direction:rtl;"></select></div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLHours">عدد الساعات</label><input type="number" id="weHours" min="0.5" max="24" step="0.5" oninput="clearWETime()"/></div>
+    </div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLFromTime">من الساعة</label><input type="time" id="weFrom" style="direction:ltr;" onchange="calcWEHours()"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLToTime">إلى الساعة</label><input type="time" id="weTo" style="direction:ltr;" onchange="calcWEHours()"/></div>
+    </div>
+    <div id="weHoursPreview" style="display:none;background:#E6F1FB;border-radius:8px;padding:6px 12px;margin-bottom:8px;font-size:12px;color:#185FA5;font-weight:600;"></div>
+    <div class="modal-grid">
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLProject">اسم المشروع</label><input type="text" id="weProject" list="projectsList" autocomplete="off"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label" id="weLCity">المدينة</label><select id="weCity"></select></div>
+    </div>
+    <div class="field-group" style="margin-bottom:0;">
+      <div class="checkbox-group"><input type="checkbox" id="weFood"/><label for="weFood" id="weLFood">بدل طعام</label></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeWorkerEditModal()" id="weCancelB">إلغاء</button>
+      <button class="modal-confirm" onclick="confirmWorkerEdit()" id="weConfirmB">حفظ التعديل</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORKER EDIT INFO MODAL -->
+<div id="editWorkerModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">👤</div><span id="ewModalTitle">تعديل بيانات الموظف</span></div>
+    <div class="field-group"><label class="field-label" id="ewLName">الاسم الكامل</label><input type="text" id="ewName"/></div>
+    <div class="field-group"><label class="field-label" id="ewLPin">رمز الدخول</label><input type="text" id="ewPin" maxlength="4"/></div>
+    <div class="field-group" style="margin-bottom:0;"><label class="field-label" id="ewLNotes">ملاحظات</label><input type="text" id="ewNotes"/></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeEditWorker()" id="ewCancelB">إلغاء</button>
+      <button class="modal-confirm" onclick="confirmEditWorker()" id="ewConfirmB">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- AVATAR MODAL -->
+<div id="avatarModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">📷</div><span id="avModalTitle">صورة الموظف</span></div>
+    <div style="text-align:center;margin-bottom:1rem;">
+      <div id="avPreview" style="width:90px;height:90px;border-radius:50%;background:#E6F1FB;display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#185FA5;overflow:hidden;border:3px solid #B5D4F4;"></div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="field-label" id="avLUpload">رفع صورة من الجهاز</label>
+      <input type="file" id="avFile" accept="image/*" onchange="previewAvatar(this)" style="width:100%;padding:8px;border:1.5px solid #E5E5E5;border-radius:10px;"/>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeAvatarModal()" id="avCancelB">إلغاء</button>
+      <button class="modal-confirm danger" onclick="removeAvatar()" id="avRemoveB" style="background:#888;">حذف الصورة</button>
+      <button class="modal-confirm" onclick="saveAvatar()" id="avSaveB">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ENTRY MODAL -->
+<div id="deleteEntryModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">🗑️</div><span id="deModalTitle">حذف السجل</span></div>
+    <p style="font-size:14px;color:#666;line-height:1.7;" id="deConfirmTxt"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDeleteEntry()" id="deCancelB">إلغاء</button>
+      <button class="modal-confirm danger" onclick="confirmDeleteEntry()" id="deConfirmB">حذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="deleteModal" style="display:none;" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title"><div class="modal-title-icon">🗑️</div><span id="dModalT">حذف الموظف</span></div>
+    <p style="font-size:14px;color:#666;line-height:1.6;" id="dConfirmTxt"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeDelModal()" id="dCancelB">إلغاء</button>
+      <button class="modal-confirm danger" onclick="confirmDel()" id="dConfirmB">حذف</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ================================================================
+// LOGO embedded as base64
+// ================================================================
+const LOGO_SRC = "data:image/png;base64,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";
+
+// ================================================================
+// TRANSLATIONS
+// ================================================================
+const TR = {
+  ar: {
+    dir:"rtl",
+    lTitle:"نظام الساعات الإضافية", lSub:"شركة مصنع هركو للتبريد المحدودة",
+    tabW:"موظف", tabS:"مشرف",
+    lSelectW:"اختر اسمك", lSPass:"كلمة المرور", lPin:"رمز الدخول",
+    wPassPH:"أدخل رمز الدخول", sPassPH:"أدخل كلمة المرور",
+    btnLogin:"دخول", lHint:"موظفون: رمز 1234",
+    navTitle:"هركو — الساعات الإضافية", btnLogout:"خروج",
+    pLabel:"الفترة الحالية", btnPrev:"◀ السابقة", btnNext:"التالية ▶",
+    ws1l:"إجمالي الساعات", ws1s:"هذه الفترة",
+    ws2l:"ساعات معتمدة", ws2s:"موافق عليها",
+    ws3l:"أيام بدل طعام", ws3s:"هذه الفترة",
+    addTitle:"إضافة ساعات إضافية",
+    lDate:"التاريخ", todayBadge:"اليوم",
+    lHours:"عدد الساعات", hoursPH:"مثال: 3",
+    lProject:"اسم المشروع", projectPH:"مثال: مشروع الرياض A",
+    lCity:"المدينة", cityPH:"اختر المدينة",
+    cities:{"Riyadh":"الرياض","Jeddah":"جدة","Dammam":"الدمام","Makkah":"مكة المكرمة","Madinah":"المدينة المنورة","Khobar":"الخبر","Dhahran":"الظهران","Taif":"الطائف","Tabuk":"تبوك","Abha":"أبها","Khamis Mushait":"خميس مشيط","Buraydah":"بريدة","Unaizah":"عنيزة","Hail":"حائل","Najran":"نجران","Jazan":"جازان","Yanbu":"ينبع","Al Jubail":"الجبيل","Hofuf":"الهفوف","Qatif":"القطيف","Arar":"عرعر","Sakaka":"سكاكا","Al Bahah":"الباحة","Al Kharj":"الخرج","Rabigh":"رابغ","Other":"أخرى"},
+    lFood:"يوجد بدل طعام لهذا اليوم",
+    btnAddE:"إضافة السجل", wTableT:"سجلات الساعات الإضافية",
+    emptyMsg:"لا توجد سجلات بعد.",
+    sTab1:"المراقبة والاعتماد", sTab2:"التقارير", sTab3:"إدارة الموظفين",
+    ss1l:"إجمالي الساعات", ss1s:"جميع الموظفين",
+    ss2l:"بانتظار الموافقة", ss2s:"سجل",
+    ss3l:"معتمدة", ss3s:"سجل",
+    empHeader:"اختر الموظفين",
+    sPendTitle:"طلبات قيد الاعتماد",
+    sApprTitle:"طلبات تم اعتمادها",
+    soSelAll:"تحديد الكل", soSelNone:"إلغاء الكل",
+    addWTitle:"إضافة موظف جديد",
+    lNewName:"الاسم الكامل", newNamePH:"مثال: محمد العمري",
+    lNewRole:"الصفة الوظيفية",
+    lNewPin:"رمز الدخول (4 أرقام)", newPinPH:"1234",
+    btnAW:"إضافة", wListTitle:"قائمة الموظفين",
+    rW:"عامل", rT:"فني", rS:"مشرف",
+    lFromTime:"من الساعة", lToTime:"إلى الساعة", lOrTime:"أو",
+    eLFromTime:"من الساعة", eLToTime:"إلى الساعة",
+    thTime:"الوقت (من/إلى)",
+    errEditLocked:"لا يمكن التعديل — السجل معتمد أو مضى عليه أكثر من يومين",
+    weModalT:"تعديل السجل", weNote:"⚠️ يمكنك التعديل خلال يومين فقط من تاريخ الإضافة",
+    weLDate:"التاريخ", weLHours:"عدد الساعات",
+    weLFromTime:"من الساعة", weLToTime:"إلى الساعة",
+    weLProject:"اسم المشروع", weLCity:"المدينة",
+    weLFood:"بدل طعام", weCancelB:"إلغاء", weConfirmB:"حفظ التعديل",
+    eModalT:"تعديل السجل",
+    eLDate:"التاريخ", eLHours:"الساعات", eLProj:"المشروع", eLCity:"المدينة",
+    eLStatus:"الحالة", eLFood:"بدل طعام",
+    eCancelB:"إلغاء", eConfirmB:"حفظ",
+    dModalT:"حذف الموظف", dCancelB:"إلغاء", dConfirmB:"حذف",
+    stPending:"بانتظار الموافقة", stApproved:"معتمد", stRejected:"مرفوض", stPShort:"بانتظار",
+    thNotes:"ملاحظات", lNotes:"ملاحظات (اختياري)", eLNotes:"ملاحظات", approvedBy:"معتمد بواسطة",
+    thDate:"التاريخ", thProject:"المشروع", thCity:"المدينة", thHours:"الساعات",
+    thFood:"بدل طعام", thStatus:"الحالة", thWorker:"الموظف", thRole:"الصفة",
+    thActions:"إجراءات", thName:"الاسم", thPin:"الرمز", thAction:"إجراء",
+    btnEdit:"تعديل", btnApprove:"اعتماد", btnReject:"رفض", btnDelete:"حذف",
+    totalLbl:"الإجمالي", hoursU:"ساعة", foodU:"يوم طعام", workU:"يوم عمل",
+    allEmp:"جميع الموظفين", recOf:"سجل", pendOf:"بانتظار",
+    toastEntryDeleted:"تم حذف السجل ✓",
+    deModalTitle:"حذف السجل",
+    deConfirmMsg:"هل أنت متأكد من حذف هذا السجل؟",
+    deCancelB:"إلغاء", deConfirmB:"حذف",
+    btnApproveAll:"اعتماد الكل", toastApproveAll:"تم اعتماد جميع السجلات ✓",
+    changePhoto:"انقر لتغيير الصورة",
+    ewModalTitle:"تعديل بيانات الموظف", ewLName:"الاسم الكامل", ewLPin:"رمز الدخول", ewLNotes:"ملاحظات",
+    ewCancelB:"إلغاء", ewConfirmB:"حفظ",
+    avModalTitle:"صورة الموظف", avLUpload:"رفع صورة من الجهاز",
+    avCancelB:"إلغاء", avRemoveB:"حذف الصورة", avSaveB:"حفظ",
+    toastPhotoSaved:"تم حفظ الصورة ✓", toastPhotoRemoved:"تم حذف الصورة",
+    errNoPhoto:"اختر صورة أولاً",
+    errSuspended:"هذا الحساب موقوف مؤقتاً — يرجى مراجعة المشرف",
+    thAccStatus:"حالة الحساب", statusActive:"نشط", statusSuspended:"موقوف",
+    btnSuspend:"إيقاف مؤقت", btnUnsuspend:"إلغاء الإيقاف",
+    toastSuspended:"تم إيقاف الحساب مؤقتاً ✓", toastUnsuspended:"تم إلغاء الإيقاف ✓",
+    toastAdded:"تم إضافة السجل ✓", toastAppr:"تم اعتماد الساعات ✓",
+    toastRej:"تم رفض السجل", toastSaved:"تم حفظ التعديلات ✓",
+    toastWAdded:"تم إضافة الموظف ✓", toastWDel:"تم حذف الموظف",
+    toastExp:"تم التصدير ✓", toastNoData:"لا توجد بيانات للتصدير",
+    errFill:"يرجى ملء جميع الحقول", errHours:"الساعات يجب أن تكون بين 0 و 24",
+    errNoHoursNoFood:"أدخل عدد الساعات أو فعّل بدل الطعام على الأقل",
+    errSelName:"اختر اسمك أولاً", errPin:"رمز الدخول غير صحيح",
+    errPass:"كلمة المرور غير صحيحة", errPinFmt:"الرمز يجب أن يكون 4 أرقام",
+    errWName:"أدخل اسم الموظف", errSelWorkers:"اختر موظفاً على الأقل",
+    delMsg1:"هل أنت متأكد من حذف", delMsg2:"سيتم حذف جميع سجلاته نهائياً.",
+    rTitle:"إعداد التقرير", rTypeLabel:"نوع التقرير",
+    rdaily:"يومي", rweekly:"أسبوعي", rmonthly:"شهري", ryearly:"سنوي", rcustom:"فترة محددة",
+    rDateLabel:"التاريخ", rFromLabel:"من تاريخ", rToLabel:"إلى تاريخ",
+    rMonthLabel:"الشهر", rYearLabel:"السنة",
+    rWFilter:"الموظفون (اختر واحد أو أكثر)",
+    btnSelAll:"تحديد الكل", btnSelNone:"إلغاء الكل", btnGenRep:"إنشاء التقرير",
+    repDailyTitle:"التقرير اليومي", repWeeklyTitle:"التقرير الأسبوعي",
+    repMonthlyTitle:"التقرير الشهري", repYearlyTitle:"التقرير السنوي",
+    repCustomTitle:"تقرير فترة محددة",
+    noRepMsg:"اختر نوع التقرير والموظفين ثم اضغط إنشاء التقرير",
+    wtab1:"سجلاتي", wtab2:"تقاريري",
+    companyName:"شركة مصنع هركو للتبريد المحدودة",
+    generatedOn:"تاريخ الإصدار",
+    months:["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"],
+    days:["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"],
+    pFmt:(s,e,m)=>"26 "+m[s.getMonth()]+" – 25 "+m[e.getMonth()]+" "+e.getFullYear(),
+  },
+  en: {
+    dir:"ltr",
+    lTitle:"Overtime Tracking System", lSub:"HRCO Refrigeration Factory Co. Ltd.",
+    tabW:"Employee", tabS:"Supervisor",
+    lSelectW:"Select your name", lSPass:"Password", lPin:"PIN Code",
+    wPassPH:"Enter PIN", sPassPH:"Enter password",
+    btnLogin:"Login", lHint:"Employees: PIN 1234",
+    navTitle:"HRCO — Overtime System", btnLogout:"Logout",
+    pLabel:"Current Period", btnPrev:"◀ Previous", btnNext:"Next ▶",
+    ws1l:"Total Hours", ws1s:"This period", ws2l:"Approved Hours", ws2s:"Approved",
+    ws3l:"Food Allowance Days", ws3s:"This period",
+    addTitle:"Add Overtime Entry",
+    lDate:"Date", todayBadge:"Today",
+    lHours:"Hours", hoursPH:"e.g. 3",
+    lProject:"Project Name", projectPH:"e.g. Riyadh Project A",
+    lCity:"City", cityPH:"Select city",
+    cities:{"Riyadh":"Riyadh","Jeddah":"Jeddah","Dammam":"Dammam","Makkah":"Makkah","Madinah":"Madinah","Khobar":"Khobar","Dhahran":"Dhahran","Taif":"Taif","Tabuk":"Tabuk","Abha":"Abha","Khamis Mushait":"Khamis Mushait","Buraydah":"Buraydah","Unaizah":"Unaizah","Hail":"Hail","Najran":"Najran","Jazan":"Jazan","Yanbu":"Yanbu","Al Jubail":"Al Jubail","Hofuf":"Hofuf","Qatif":"Qatif","Arar":"Arar","Sakaka":"Sakaka","Al Bahah":"Al Bahah","Al Kharj":"Al Kharj","Rabigh":"Rabigh","Other":"Other"},
+    lFood:"Food allowance for this day",
+    btnAddE:"Add Entry", wTableT:"Overtime Records",
+    emptyMsg:"No records yet.",
+    sTab1:"Monitor & Approve", sTab2:"Reports", sTab3:"Manage Employees",
+    ss1l:"Total Hours", ss1s:"All employees", ss2l:"Pending", ss2s:"records",
+    ss3l:"Approved", ss3s:"records",
+    empHeader:"Select Employees",
+    sPendTitle:"Pending Approvals",
+    sApprTitle:"Approved Requests",
+    soSelAll:"Select All", soSelNone:"Clear All",
+    lNewName:"Full Name", newNamePH:"e.g. Mohammed Al-Omari",
+    lNewRole:"Job Title", lNewPin:"PIN Code (4 digits)", newPinPH:"1234",
+    btnAW:"Add", wListTitle:"Employee List",
+    rW:"Worker", rT:"Technician", rS:"Supervisor",
+    lFromTime:"From", lToTime:"To", lOrTime:"or",
+    eLFromTime:"From", eLToTime:"To",
+    thTime:"Time (From/To)",
+    errEditLocked:"Cannot edit — entry is approved or older than 2 days",
+    weModalT:"Edit My Entry", weNote:"⚠️ You can only edit within 2 days of adding",
+    weLDate:"Date", weLHours:"Hours",
+    weLFromTime:"From", weLToTime:"To",
+    weLProject:"Project Name", weLCity:"City",
+    weLFood:"Food Allowance", weCancelB:"Cancel", weConfirmB:"Save Changes",
+    eModalT:"Edit Record",
+    eLDate:"Date", eLHours:"Hours", eLProj:"Project", eLCity:"City",
+    eLStatus:"Status", eLFood:"Food Allowance",
+    eCancelB:"Cancel", eConfirmB:"Save",
+    dModalT:"Delete Employee", dCancelB:"Cancel", dConfirmB:"Delete",
+    stPending:"Pending Approval", stApproved:"Approved", stRejected:"Rejected", stPShort:"Pending",
+    thNotes:"Notes", lNotes:"Notes (optional)", eLNotes:"Notes", approvedBy:"Approved by",
+    thDate:"Date", thProject:"Project", thCity:"City", thHours:"Hours",
+    thFood:"Food Allow.", thStatus:"Status", thWorker:"Employee", thRole:"Role",
+    thActions:"Actions", thName:"Name", thPin:"PIN", thAction:"Action",
+    btnEdit:"Edit", btnApprove:"Approve", btnReject:"Reject", btnDelete:"Delete",
+    totalLbl:"Total", hoursU:"hrs", foodU:"food days", workU:"work days",
+    allEmp:"All Employees", recOf:"records", pendOf:"pending",
+    toastEntryDeleted:"Entry deleted ✓",
+    deModalTitle:"Delete Entry",
+    deConfirmMsg:"Are you sure you want to delete this entry?",
+    deCancelB:"Cancel", deConfirmB:"Delete",
+    btnApproveAll:"Approve All", toastApproveAll:"All entries approved ✓",
+    changePhoto:"Click to change photo",
+    ewModalTitle:"Edit Employee Info", ewLName:"Full Name", ewLPin:"PIN Code", ewLNotes:"Notes",
+    ewCancelB:"Cancel", ewConfirmB:"Save",
+    avModalTitle:"Employee Photo", avLUpload:"Upload photo from device",
+    avCancelB:"Cancel", avRemoveB:"Remove Photo", avSaveB:"Save",
+    toastPhotoSaved:"Photo saved ✓", toastPhotoRemoved:"Photo removed",
+    errNoPhoto:"Please select a photo first",
+    errSuspended:"This account is suspended — please contact your supervisor",
+    thAccStatus:"Account Status", statusActive:"Active", statusSuspended:"Suspended",
+    btnSuspend:"Suspend", btnUnsuspend:"Unsuspend",
+    toastSuspended:"Account suspended ✓", toastUnsuspended:"Account unsuspended ✓",
+    toastAdded:"Entry added ✓", toastAppr:"Hours approved ✓",
+    toastRej:"Entry rejected", toastSaved:"Changes saved ✓",
+    toastWAdded:"Employee added ✓", toastWDel:"Employee deleted",
+    toastExp:"Exported ✓", toastNoData:"No data to export",
+    errFill:"Please fill all fields", errHours:"Hours must be between 0 and 24",
+    errNoHoursNoFood:"Enter hours or enable food allowance at least",
+    errSelName:"Select your name first", errPin:"Incorrect PIN",
+    errPass:"Incorrect password", errPinFmt:"PIN must be 4 digits",
+    errWName:"Enter employee name", errSelWorkers:"Select at least one employee",
+    delMsg1:"Are you sure you want to delete", delMsg2:"All records will be permanently deleted.",
+    rTitle:"Report Setup", rTypeLabel:"Report Type",
+    rdaily:"Daily", rweekly:"Weekly", rmonthly:"Monthly", ryearly:"Yearly", rcustom:"Custom Range",
+    rDateLabel:"Date", rFromLabel:"From Date", rToLabel:"To Date",
+    rMonthLabel:"Month", rYearLabel:"Year",
+    rWFilter:"Employees (select one or more)",
+    btnSelAll:"Select All", btnSelNone:"Clear All", btnGenRep:"Generate Report",
+    repDailyTitle:"Daily Report", repWeeklyTitle:"Weekly Report",
+    repMonthlyTitle:"Monthly Report", repYearlyTitle:"Yearly Report",
+    repCustomTitle:"Custom Period Report",
+    noRepMsg:"Select report type and employees then click Generate Report",
+    wtab1:"My Records", wtab2:"My Reports",
+    companyName:"HRCO Refrigeration Factory Co. Ltd.",
+    generatedOn:"Generated on",
+    months:["January","February","March","April","May","June","July","August","September","October","November","December"],
+    days:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+    pFmt:(s,e,m)=>"26 "+m[s.getMonth()]+" – 25 "+m[e.getMonth()]+" "+e.getFullYear(),
+  },
+  ur: {
+    dir:"rtl",
+    lTitle:"اوور ٹائم سسٹم", lSub:"HRCO ریفریجریشن فیکٹری کمپنی",
+    tabW:"ملازم", tabS:"سپروائزر",
+    lSelectW:"اپنا نام منتخب کریں", lSPass:"پاس ورڈ", lPin:"پن کوڈ",
+    wPassPH:"پن کوڈ درج کریں", sPassPH:"پاس ورڈ درج کریں",
+    btnLogin:"داخل ہوں", lHint:"ملازمین: پن 1234",
+    navTitle:"HRCO — اوور ٹائم", btnLogout:"لاگ آؤٹ",
+    pLabel:"موجودہ مدت", btnPrev:"◀ پچھلا", btnNext:"اگلا ▶",
+    ws1l:"کل گھنٹے", ws1s:"اس مدت میں", ws2l:"منظور شدہ", ws2s:"منظور",
+    ws3l:"کھانے کے دن", ws3s:"اس مدت میں",
+    addTitle:"اوور ٹائم اندراج",
+    lDate:"تاریخ", todayBadge:"آج",
+    lHours:"گھنٹے", hoursPH:"مثلاً: 3",
+    lProject:"پروجیکٹ", projectPH:"مثلاً: ریاض پروجیکٹ",
+    lCity:"شہر", cityPH:"شہر منتخب کریں",
+    cities:{"Riyadh":"ریاض","Jeddah":"جدہ","Dammam":"دمام","Makkah":"مکہ مکرمہ","Madinah":"مدینہ منورہ","Khobar":"خبر","Dhahran":"ظہران","Taif":"طائف","Tabuk":"تبوک","Abha":"ابہا","Khamis Mushait":"خمیس مشیط","Buraydah":"بریدہ","Unaizah":"عنیزہ","Hail":"حائل","Najran":"نجران","Jazan":"جازان","Yanbu":"ینبع","Al Jubail":"جبیل","Hofuf":"ہفوف","Qatif":"قطیف","Arar":"عرعر","Sakaka":"سکاکا","Al Bahah":"باحہ","Al Kharj":"خرج","Rabigh":"رابغ","Other":"دیگر"},
+    lFood:"کھانے کا الاؤنس",
+    btnAddE:"اندراج کریں", wTableT:"اوور ٹائم ریکارڈز",
+    emptyMsg:"کوئی ریکارڈ نہیں۔",
+    sTab1:"نگرانی اور منظوری", sTab2:"رپورٹس", sTab3:"ملازمین انتظام",
+    ss1l:"کل گھنٹے", ss1s:"تمام ملازمین", ss2l:"زیر التوا", ss2s:"ریکارڈ",
+    ss3l:"منظور شدہ", ss3s:"ریکارڈ",
+    empHeader:"ملازمین منتخب کریں",
+    sPendTitle:"زیر التوا درخواستیں",
+    sApprTitle:"منظور شدہ درخواستیں",
+    soSelAll:"سب منتخب", soSelNone:"سب ہٹائیں",
+    lNewName:"پورا نام", newNamePH:"مثلاً: محمد",
+    lNewRole:"عہدہ", lNewPin:"پن (4 ہندسے)", newPinPH:"1234",
+    btnAW:"شامل", wListTitle:"ملازمین کی فہرست",
+    rW:"مزدور", rT:"ٹیکنیشن", rS:"سپروائزر",
+    lFromTime:"شروع وقت", lToTime:"ختم وقت", lOrTime:"یا",
+    eLFromTime:"شروع وقت", eLToTime:"ختم وقت",
+    thTime:"وقت (شروع/ختم)",
+    errEditLocked:"ترمیم ممکن نہیں — منظور شدہ یا 2 دن سے پرانا",
+    weModalT:"اپنا ریکارڈ ترمیم کریں", weNote:"⚠️ صرف 2 دن کے اندر ترمیم ممکن ہے",
+    weLDate:"تاریخ", weLHours:"گھنٹے",
+    weLFromTime:"شروع وقت", weLToTime:"ختم وقت",
+    weLProject:"پروجیکٹ کا نام", weLCity:"شہر",
+    weLFood:"کھانے کا الاؤنس", weCancelB:"منسوخ", weConfirmB:"محفوظ کریں",
+    eModalT:"ریکارڈ ترمیم",
+    eLDate:"تاریخ", eLHours:"گھنٹے", eLProj:"پروجیکٹ", eLCity:"شہر",
+    eLStatus:"حیثیت", eLFood:"کھانا",
+    eCancelB:"منسوخ", eConfirmB:"محفوظ",
+    dModalT:"ملازم حذف", dCancelB:"منسوخ", dConfirmB:"حذف",
+    stPending:"زیر التوا", stApproved:"منظور", stRejected:"مسترد", stPShort:"انتظار",
+    thNotes:"نوٹس", lNotes:"نوٹس (اختیاری)", eLNotes:"نوٹس", approvedBy:"منظور کنندہ",
+    thDate:"تاریخ", thProject:"پروجیکٹ", thCity:"شہر", thHours:"گھنٹے",
+    thFood:"کھانا", thStatus:"حیثیت", thWorker:"ملازم", thRole:"عہدہ",
+    thActions:"اقدامات", thName:"نام", thPin:"پن", thAction:"اقدام",
+    btnEdit:"ترمیم", btnApprove:"منظور", btnReject:"مسترد", btnDelete:"حذف",
+    totalLbl:"کل", hoursU:"گھنٹے", foodU:"کھانے کے دن", workU:"کام کے دن",
+    allEmp:"تمام ملازمین", recOf:"ریکارڈ", pendOf:"انتظار",
+    toastEntryDeleted:"ریکارڈ حذف ✓",
+    deModalTitle:"ریکارڈ حذف کریں",
+    deConfirmMsg:"کیا آپ واقعی یہ ریکارڈ حذف کرنا چاہتے ہیں؟",
+    deCancelB:"منسوخ", deConfirmB:"حذف",
+    btnApproveAll:"سب منظور کریں", toastApproveAll:"تمام ریکارڈز منظور ✓",
+    changePhoto:"تصویر تبدیل کریں",
+    ewModalTitle:"ملازم کی معلومات ترمیم", ewLName:"پورا نام", ewLPin:"پن کوڈ", ewLNotes:"نوٹس",
+    ewCancelB:"منسوخ", ewConfirmB:"محفوظ",
+    avModalTitle:"ملازم کی تصویر", avLUpload:"ڈیوائس سے تصویر اپلوڈ کریں",
+    avCancelB:"منسوخ", avRemoveB:"تصویر حذف", avSaveB:"محفوظ",
+    toastPhotoSaved:"تصویر محفوظ ✓", toastPhotoRemoved:"تصویر حذف",
+    errNoPhoto:"پہلے تصویر منتخب کریں",
+    errSuspended:"یہ اکاؤنٹ معطل ہے — براہ کرم سپروائزر سے رابطہ کریں",
+    thAccStatus:"اکاؤنٹ کی حیثیت", statusActive:"فعال", statusSuspended:"معطل",
+    btnSuspend:"عارضی معطلی", btnUnsuspend:"معطلی ختم کریں",
+    toastSuspended:"اکاؤنٹ معطل ✓", toastUnsuspended:"معطلی ختم ✓",
+    toastAdded:"ریکارڈ شامل ✓", toastAppr:"منظور ✓",
+    toastRej:"مسترد", toastSaved:"محفوظ ✓",
+    toastWAdded:"ملازم شامل ✓", toastWDel:"ملازم حذف",
+    toastExp:"ایکسپورٹ ✓", toastNoData:"ڈیٹا نہیں",
+    errFill:"تمام خانے پُر کریں", errHours:"گھنٹے 0 سے 24 کے درمیان",
+    errNoHoursNoFood:"گھنٹے درج کریں یا کھانے کا الاؤنس منتخب کریں",
+    errSelName:"نام منتخب کریں", errPin:"پن غلط",
+    errPass:"پاس ورڈ غلط", errPinFmt:"پن 4 ہندسے",
+    errWName:"نام درج کریں", errSelWorkers:"ایک ملازم منتخب کریں",
+    delMsg1:"حذف کریں؟", delMsg2:"تمام ریکارڈز حذف ہوں گے۔",
+    rTitle:"رپورٹ ترتیب", rTypeLabel:"رپورٹ کی قسم",
+    rdaily:"روزانہ", rweekly:"ہفتہ وار", rmonthly:"ماہانہ", ryearly:"سالانہ", rcustom:"مخصوص",
+    rDateLabel:"تاریخ", rFromLabel:"شروع", rToLabel:"اختتام",
+    rMonthLabel:"مہینہ", rYearLabel:"سال",
+    rWFilter:"ملازمین منتخب کریں",
+    btnSelAll:"سب منتخب", btnSelNone:"سب ہٹائیں", btnGenRep:"رپورٹ بنائیں",
+    repDailyTitle:"روزانہ رپورٹ", repWeeklyTitle:"ہفتہ وار رپورٹ",
+    repMonthlyTitle:"ماہانہ رپورٹ", repYearlyTitle:"سالانہ رپورٹ",
+    repCustomTitle:"مخصوص رپورٹ",
+    noRepMsg:"رپورٹ کی قسم منتخب کریں پھر رپورٹ بنائیں",
+    wtab1:"میرے ریکارڈز", wtab2:"میری رپورٹس",
+    companyName:"HRCO ریفریجریشن فیکٹری",
+    generatedOn:"تاریخ اجرا",
+    months:["جنوری","فروری","مارچ","اپریل","مئی","جون","جولائی","اگست","ستمبر","اکتوبر","نومبر","دسمبر"],
+    days:["اتوار","پیر","منگل","بدھ","جمعرات","جمعہ","ہفتہ"],
+    pFmt:(s,e,m)=>"26 "+m[s.getMonth()]+" – 25 "+m[e.getMonth()]+" "+e.getFullYear(),
+  }
+};
+
+// ================================================================
+// SUPABASE CONFIGURATION
+// ================================================================
+const SUPABASE_URL = "https://yxrncubqcbzwsxjhwveb.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4cm5jdWJxY2J6d3N4amh3dmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDE3NzcsImV4cCI6MjA5MzkxNzc3N30.mz7rabNMWXD7-jzh2XHabJppbRvpzxaJkZqng2nVAaQ";
+
+const sb = (() => {
+  const headers = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Prefer": "return=representation"
+  };
+  const api = (path, opts={}) =>
+    fetch(SUPABASE_URL + "/rest/v1/" + path, { headers, ...opts })
+      .then(r => r.json().then(d => ({ok: r.ok, status: r.status, data: d})));
+
+  return {
+    from: (table) => ({
+      select: (cols="*") => api(table + "?select=" + cols),
+      selectWhere: (cols, filter) => api(table + "?select=" + cols + "&" + filter),
+      insert: (body) => api(table, { method:"POST", body: JSON.stringify(body) }),
+      upsert: (body) => api(table, { method:"POST",
+        headers: {...headers, "Prefer":"return=representation,resolution=merge-duplicates"},
+        body: JSON.stringify(body) }),
+      update: (body, filter) => api(table + "?" + filter, { method:"PATCH", body: JSON.stringify(body) }),
+      delete: (filter) => api(table + "?" + filter, { method:"DELETE" }),
+    })
+  };
+})();
+
+// ================================================================
+// STATE
+// ================================================================
+let lang = localStorage.getItem("ot_lang") || "ar";
+let workers = {};   // loaded from Supabase
+let entries = {};   // loaded from Supabase, keyed by worker_id → period_key → []
+let currentUser=null, currentRole=null, loginType="worker";
+let periodOffset=0, filterWorker=null, editingE=null, delWorkerKey=null;
+let reportType="daily", reportData=[], reportMeta={};
+let dbReady = false;
+
+function t(k){ return TR[lang][k]||TR.ar[k]||k; }
+function saveLang(){ localStorage.setItem("ot_lang", lang); }
+
+// ================================================================
+// LOADING SCREEN
+// ================================================================
+function showLoading(v){
+  document.getElementById("loadingOverlay").classList.toggle("show", v);
+}
+function showDbError(msg){
+  const h=document.getElementById("lHint");
+  if(h){ h.textContent=msg; h.style.color="#C0392B"; h.style.fontWeight="600"; }
+}
+
+// ================================================================
+// DB — LOAD ALL DATA
+// ================================================================
+async function loadAll(){
+  showLoading(true);
+  try {
+    // Load workers
+    const wRes = await sb.from("workers").select("*");
+    if(!wRes.ok){ showDbError("❌ خطأ في الاتصال بقاعدة البيانات — تحقق من SUPABASE_URL و SUPABASE_KEY"); showLoading(false); return false; }
+    workers = {};
+    (wRes.data||[]).forEach(w => {
+      workers[w.id] = { name:w.name, role:w.role, pin:w.pin, avatar:w.avatar||"", notes:w.notes||"", suspended:!!w.suspended };
+    });
+
+    // Load all entries
+    const eRes = await sb.from("overtime_entries").select("*");
+    entries = {};
+    (eRes.data||[]).forEach(e => {
+      if(!entries[e.worker_id]) entries[e.worker_id] = {};
+      const pk = periodKeyFromDate(e.date);
+      if(!entries[e.worker_id][pk]) entries[e.worker_id][pk] = [];
+      entries[e.worker_id][pk].push({
+        id: e.id, date: e.date, hours: e.hours,
+        project: e.project, city: e.city,
+        food: e.food, status: e.status,
+        timeFrom: e.time_from||"", timeTo: e.time_to||"",
+        approved_at: e.approved_at||"", approved_by: e.approved_by||"",
+        notes: e.notes||""
+      });
+    });
+    dbReady = true;
+    buildProjectsList();
+    showLoading(false);
+    return true;
+  } catch(err){
+    showDbError("❌ تعذّر الاتصال — تأكد من إعدادات Supabase");
+    showLoading(false);
+    return false;
+  }
+}
+
+// Convert stored date "yyyy/mm/dd" to period key
+function periodKeyFromDate(dateStr){
+  const parts = dateStr.split("/");
+  if(parts.length < 3) return "0-0";
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  // Period runs 26th of month A to 25th of month B
+  // getPeriod(offset) returns key = start.getFullYear() + "-" + start.getMonth()
+  // start = new Date(year, month-1+offset, 26) where month is current month index
+  // So for a date, start of its period = 26th of previous month if day >= 26, else 26th of month before previous
+  let startYear = d.getFullYear();
+  let startMonth = d.getMonth(); // 0-based
+  if(d.getDate() <= 25){
+    // This date falls in the period that started on the 26th of the previous month
+    startMonth -= 1;
+    if(startMonth < 0){ startMonth = 11; startYear--; }
+  }
+  // startMonth here is the month index of the 26th start date
+  return startYear + "-" + startMonth;
+}
+
+function getEnt(wk, pk){
+  if(!entries[wk]) entries[wk] = {};
+  if(!entries[wk][pk]) entries[wk][pk] = [];
+  return entries[wk][pk];
+}
+
+// ================================================================
+// DB — ADD ENTRY
+// ================================================================
+async function dbAddEntry(workerID, entryObj){
+  // Try with all fields first
+  const payload = {
+    id: entryObj.id,
+    worker_id: workerID,
+    date: entryObj.date,
+    hours: entryObj.hours,
+    project: entryObj.project,
+    city: entryObj.city,
+    food: entryObj.food,
+    status: entryObj.status,
+    time_from: entryObj.timeFrom||"",
+    time_to: entryObj.timeTo||"",
+    notes: entryObj.notes||""
+  };
+  let res = await sb.from("overtime_entries").insert(payload);
+  // If failed (possibly notes column doesn't exist yet), retry without notes
+  if(!res.ok){
+    console.warn("Insert with notes failed:", res.data, "— retrying without notes...");
+    const payloadNoNotes = {
+      id: entryObj.id, worker_id: workerID,
+      date: entryObj.date, hours: entryObj.hours,
+      project: entryObj.project, city: entryObj.city,
+      food: entryObj.food, status: entryObj.status,
+      time_from: entryObj.timeFrom||"", time_to: entryObj.timeTo||""
+    };
+    res = await sb.from("overtime_entries").insert(payloadNoNotes);
+  }
+  return res;
+}
+
+// ================================================================
+// DB — UPDATE ENTRY STATUS
+// ================================================================
+async function dbUpdateStatus(entryId, status, approvedBy){
+  const fields = { status };
+  if(status === "approved"){
+    fields.approved_at = new Date().toISOString();
+    fields.approved_by = approvedBy||"";
+  } else {
+    fields.approved_at = null;
+    fields.approved_by = "";
+  }
+  const res = await sb.from("overtime_entries")
+    .update(fields, "id=eq." + entryId);
+  return res.ok;
+}
+
+// ================================================================
+// DB — UPDATE ENTRY (full edit)
+// ================================================================
+async function dbUpdateEntry(entryId, fields){
+  const res = await sb.from("overtime_entries")
+    .update(fields, "id=eq." + entryId);
+  return res.ok;
+}
+
+// ================================================================
+// DB — DELETE ENTRY
+// ================================================================
+async function dbDeleteEntry(entryId){
+  const res = await sb.from("overtime_entries").delete("id=eq." + entryId);
+  return res.ok;
+}
+
+// ================================================================
+// DB — ADD WORKER
+// ================================================================
+async function dbAddWorker(id, worker){
+  const res = await sb.from("workers").insert({ id, name:worker.name, role:worker.role, pin:worker.pin });
+  return res.ok;
+}
+
+// ================================================================
+// DB — UPDATE WORKER
+// ================================================================
+async function dbUpdateWorker(id, fields){
+  const res = await sb.from("workers").update(fields, "id=eq." + id);
+  return res.ok;
+}
+
+// ================================================================
+// DB — DELETE WORKER (cascade deletes entries)
+// ================================================================
+async function dbDeleteWorker(id){
+  const res = await sb.from("workers").delete("id=eq." + id);
+  return res.ok;
+}
+
+
+// ================================================================
+// HELPERS
+// ================================================================
+function roleLabel(r){return {worker:t("rW"),technician:t("rT"),supervisor:t("rS")}[r]||r;}
+function roleClass(r){return {worker:"rl-w",technician:"rl-t",supervisor:"rl-s"}[r]||"rl-w";}
+function roleBadgeClass(r){return {worker:"nb-w",technician:"nb-t",supervisor:"nb-s"}[r]||"nb-w";}
+function stLabel(s){return {pending:t("stPending"),approved:t("stApproved"),rejected:t("stRejected")}[s]||s;}
+function stShort(s){return {pending:t("stPShort"),approved:t("stApproved"),rejected:t("stRejected")}[s]||s;}
+function stClass(s){return {pending:"st-p",approved:"st-a",rejected:"st-r"}[s]||"st-p";}
+function getTodayStr(){const n=new Date();return n.getFullYear()+"/"+String(n.getMonth()+1).padStart(2,"0")+"/"+String(n.getDate()).padStart(2,"0");}
+function getTodayISO(){const n=new Date();return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");}
+function getTodayDisplay(){const n=new Date();return t("days")[n.getDay()]+" "+n.getDate()+" "+t("months")[n.getMonth()]+" "+n.getFullYear();}
+function isoToDisplay(iso){const p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
+function getPeriod(offset){
+  const n=new Date();
+  const s=new Date(n.getFullYear(),n.getMonth()-1+offset,26);
+  const e=new Date(n.getFullYear(),n.getMonth()+offset,25);
+  return{label:TR[lang].pFmt(s,e,t("months")),key:s.getFullYear()+"-"+s.getMonth()};
+}
+function getEnt(wk,pk){if(!entries[wk])entries[wk]={};if(!entries[wk][pk])entries[wk][pk]=[];return entries[wk][pk];}
+function initials(name){const p=name.trim().split(" ");return p.length>=2?p[0][0]+p[1][0]:p[0].slice(0,2);}
+function dateStrToObj(ds){const p=ds.split("/");return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
+function buildCitySel(id){
+  const s=document.getElementById(id);if(!s)return;
+  const prev=cityKey(s.value||""); // normalize any old Arabic value to English key
+  s.innerHTML="<option value=''>"+t("cityPH")+"</option>";
+  const cities=t("cities"); // now an object {key: label}
+  Object.entries(cities).forEach(([key,label])=>{
+    const o=document.createElement("option");
+    o.value=key; // always store English key
+    o.textContent=label; // display in current language
+    s.appendChild(o);
+  });
+  if(prev)s.value=prev;
+}
+// Map old Arabic/Urdu stored values → English key (for backward compat)
+const CITY_MIGRATION = {
+  "الرياض":"Riyadh","جدة":"Jeddah","الدمام":"Dammam",
+  "مكة المكرمة":"Makkah","المدينة المنورة":"Madinah",
+  "تبوك":"Tabuk","أبها":"Abha","أخرى":"Other",
+  "ریاض":"Riyadh","جدہ":"Jeddah","دمام":"Dammam",
+  "مکہ مکرمہ":"Makkah","مدینہ منورہ":"Madinah",
+  "تبوک":"Tabuk","ابہا":"Abha","دیگر":"Other",
+};
+// Normalize a stored city value to English key
+function cityKey(val){return CITY_MIGRATION[val]||val;}
+// Translate an English key to current language label
+function cityLabel(val){
+  if(!val)return "";
+  const key=cityKey(val); // normalize old values
+  const cities=t("cities");
+  return cities[key]||val;
+}
+function buildWorkerSel(){
+  const s=document.getElementById("workerSelect");
+  s.innerHTML="<option value=''>-- "+t("lSelectW")+" --</option>";
+  Object.keys(workers).forEach(k=>{
+    const o=document.createElement("option");
+    o.value=k;
+    o.textContent=workers[k].name+" ("+roleLabel(workers[k].role)+")"+(workers[k].suspended?" 🔒 "+t("statusSuspended"):"");
+    s.appendChild(o);
+  });
+}
+function refreshPeriod(){
+  const p=getPeriod(periodOffset);
+  const wp=document.getElementById("workerPeriod"),sp=document.getElementById("supPeriod");
+  if(wp)wp.textContent=p.label;if(sp)sp.textContent=p.label;
+}
+
+// ================================================================
+// LANGUAGE
+// ================================================================
+function setLang(l){
+  lang=l;saveLang();
+  document.body.className="lang-"+l;
+  document.documentElement.lang=l;
+  document.documentElement.dir=TR[l].dir;
+  ["ar","en","ur"].forEach(x=>document.getElementById("lb-"+x).classList.toggle("active",x===l));
+  applyTR();buildWorkerSel();buildCitySel("entryCity");buildCitySel("editCity");buildCitySel("weCity");
+  if(currentRole==="worker") buildDateSelect();
+  refreshPeriod();
+  if(currentRole==="worker")renderWT();
+  else if(currentRole==="supervisor"){renderSO();renderMW();buildSOWorkers();buildReportWorkers();updateReportDateUI();}
+}
+
+function applyTR(){
+  const map={
+    llabel:"langLabel",lTitle:"lTitle",lSub:"lSub",tabW:"tabW",tabS:"tabS",
+    lSelectW:"lSelectW",lSPass:"lSPass",lPin:"lPin",btnLogin:"btnLogin",lHint:"lHint",
+    navTitle:"navTitle",btnLogout:"btnLogout",
+    wPLabel:"pLabel",sPLabel:"pLabel",
+    btnPW:"btnPrev",btnNW:"btnNext",btnPS:"btnPrev",btnNS:"btnNext",
+    ws1l:"ws1l",ws1s:"ws1s",ws2l:"ws2l",ws2s:"ws2s",ws3l:"ws3l",ws3s:"ws3s",
+    addTitle:"addTitle",lDate:"lDate",
+    lHours:"lHours",lProject:"lProject",lCity:"lCity",lFood:"lFood",lNotes:"lNotes",
+    btnAddE:"btnAddE",wTableT:"wTableT",emptyW:"emptyMsg",
+    sTab1:"sTab1",sTab2:"sTab2",sTab3:"sTab3",
+    ss1l:"ss1l",ss1s:"ss1s",ss2l:"ss2l",ss2s:"ss2s",ss3l:"ss3l",ss3s:"ss3s",
+    empHeader:"empHeader",
+    sPendTitle:"sPendTitle", sApprTitle:"sApprTitle",
+    soSelAll:"soSelAll", soSelNone:"soSelNone",
+    addWTitle:"addWTitle",
+    lNewName:"lNewName",lNewRole:"lNewRole",lNewPin:"lNewPin",
+    btnAW:"btnAW",wListTitle:"wListTitle",
+    rW:"rW",rT:"rT",rS:"rS",
+    lFromTime:"lFromTime",lToTime:"lToTime",lOrTime:"lOrTime",
+    eLFromTime:"eLFromTime",eLToTime:"eLToTime",
+    weModalT:"weModalT", weNote:"weNote",
+    weLDate:"weLDate", weLHours:"weLHours",
+    weLFromTime:"weLFromTime", weLToTime:"weLToTime",
+    weLProject:"weLProject", weLCity:"weLCity",
+    weLFood:"weLFood", weCancelB:"weCancelB", weConfirmB:"weConfirmB",
+    eModalT:"eModalT",eLDate:"eLDate",eLHours:"eLHours",eLProj:"eLProj",eLCity:"eLCity",
+    eLStatus:"eLStatus",eLFood:"eLFood",eLNotes:"eLNotes",eCancelB:"eCancelB",eConfirmB:"eConfirmB",
+    eStP:"stPShort",eStA:"stApproved",eStR:"stRejected",
+    deModalTitle:"deModalTitle", deCancelB:"deCancelB", deConfirmB:"deConfirmB",
+    ewModalTitle:"ewModalTitle", ewLName:"ewLName", ewLPin:"ewLPin", ewLNotes:"ewLNotes",
+    ewCancelB:"ewCancelB", ewConfirmB:"ewConfirmB",
+    avModalTitle:"avModalTitle", avLUpload:"avLUpload",
+    avCancelB:"avCancelB", avRemoveB:"avRemoveB", avSaveB:"avSaveB",
+    dModalT:"dModalT",dCancelB:"dCancelB",dConfirmB:"dConfirmB",
+    rTitle:"rTitle",rTypeLabel:"rTypeLabel",
+    rdaily:"rdaily",rweekly:"rweekly",rmonthly:"rmonthly",ryearly:"ryearly",rcustom:"rcustom",
+    rWFilter:"rWFilter",btnSelAll:"btnSelAll",btnSelNone:"btnSelNone",btnGenRep:"btnGenRep",
+    noRepMsg:"noRepMsg",wtab1:"wtab1",wtab2:"wtab2",
+  };
+  Object.entries(map).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.textContent=t(key)||"";});
+  const ph={workerPass:"wPassPH",supervisorPass:"sPassPH",entryHours:"hoursPH",entryProject:"projectPH",newWName:"newNamePH",newWPin:"newPinPH"};
+  Object.entries(ph).forEach(([id,key])=>{const el=document.getElementById(id);if(el)el.placeholder=t(key);});
+  buildDateSelect();
+  refreshPeriod();
+}
+
+// ================================================================
+// LOGIN
+// ================================================================
+function setLoginType(type){
+  loginType=type;
+  document.querySelectorAll(".login-tab").forEach((el,i)=>el.classList.toggle("active",(i===0&&type==="worker")||(i===1&&type==="supervisor")));
+  document.getElementById("wSelectGroup").style.display=type==="worker"?"":"none";
+  document.getElementById("wPinGroup").style.display=type==="worker"?"":"none";
+  document.getElementById("sPassGroup").style.display=type==="supervisor"?"":"none";
+}
+function doLogin(){
+  if(loginType==="worker"){
+    const w=document.getElementById("workerSelect").value;
+    const p=document.getElementById("workerPass").value;
+    if(!w)return toast(t("errSelName"));
+    if(workers[w].suspended)return toast(t("errSuspended"));
+    if(p!==workers[w].pin)return toast(t("errPin"));
+    currentUser=w;currentRole="worker";
+    document.getElementById("userName").textContent=workers[w].name;
+    document.getElementById("userBadge").textContent=roleLabel(workers[w].role);
+    document.getElementById("userBadge").className="nav-badge "+roleBadgeClass(workers[w].role);
+    showApp("worker");
+  }else{
+    if(document.getElementById("supervisorPass").value!=="1126")return toast(t("errPass"));
+    currentUser="supervisor";currentRole="supervisor";
+    document.getElementById("userName").textContent=lang==="en"?"Supervisor":lang==="ur"?"سپروائزر":"المشرف العام";
+    document.getElementById("userBadge").textContent=roleLabel("supervisor");
+    document.getElementById("userBadge").className="nav-badge nb-s";
+    showApp("supervisor");
+  }
+}
+async function showApp(role){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("mainApp").style.display="block";
+  document.getElementById("workerPage").className=role==="worker"?"page active":"page";
+  document.getElementById("supervisorPage").className=role==="supervisor"?"page active":"page";
+  periodOffset=0;filterWorker=null;
+  // Refresh data from Supabase on login
+  showLoading(true);
+  await loadAll();
+  buildWorkerSel();
+  if(role==="worker") buildDateSelect();
+  showLoading(false);
+  refreshPeriod();
+  if(role==="worker")renderWT();
+  else{renderSO();renderMW();buildSOWorkers();buildReportWorkers();updateReportDateUI();}
+}
+function logout(){
+  currentUser=null;currentRole=null;periodOffset=0;filterWorker=null;
+  document.getElementById("loginScreen").style.display="flex";
+  document.getElementById("mainApp").style.display="none";
+  ["workerSelect","workerPass","supervisorPass"].forEach(id=>document.getElementById(id).value="");
+}
+function changePeriod(dir){periodOffset+=dir;refreshPeriod();if(currentRole==="worker")renderWT();else renderSO();}
+function showWorkerTab(tab){
+  ["wtab1","wtab2"].forEach((id,i)=>document.getElementById(id).classList.toggle("active",(i===0&&tab==="entries")||(i===1&&tab==="myreports")));
+  document.getElementById("wEntries").className="tab-section"+(tab==="entries"?" active":"");
+  document.getElementById("wMyReports").className="tab-section"+(tab==="myreports"?" active":"");
+  if(tab==="myreports")buildMyReports();
+}
+function showSupTab(tab){
+  ["sTab1","sTab2","sTab3"].forEach((id,i)=>document.getElementById(id).classList.toggle("active",(i===0&&tab==="overview")||(i===1&&tab==="reports")||(i===2&&tab==="manage")));
+  document.getElementById("supOverview").className="tab-section"+(tab==="overview"?" active":"");
+  document.getElementById("supReports").className="tab-section"+(tab==="reports"?" active":"");
+  document.getElementById("supManage").className="tab-section"+(tab==="manage"?" active":"");
+  if(tab==="manage")renderMW();
+  if(tab==="reports"){buildReportWorkers();updateReportDateUI();}
+  if(tab==="overview"){buildSOWorkers();renderSO();}
+}
+
+// ================================================================
+// WORKER TABLE
+// ================================================================
+// ================================================================
+// DATE SELECT — last 3 days (today + 2 previous)
+// ================================================================
+function buildDateSelect(){
+  const sel=document.getElementById("entryDate");
+  if(!sel)return;
+  sel.innerHTML="";
+  const days=t("days");
+  const months=t("months");
+  for(let i=0;i<=2;i++){
+    const d=new Date();
+    d.setDate(d.getDate()-i);
+    const yyyy=d.getFullYear();
+    const mm=String(d.getMonth()+1).padStart(2,"0");
+    const dd=String(d.getDate()).padStart(2,"0");
+    const val=yyyy+"/"+mm+"/"+dd;
+    const label=(i===0?(lang==="en"?"Today ":lang==="ur"?"آج ":"اليوم — "):
+                  i===1?(lang==="en"?"Yesterday ":lang==="ur"?"کل ":"أمس — "):
+                  (lang==="en"?"2 days ago ":lang==="ur"?"2 دن پہلے ":"قبل يومين — "))+
+               days[d.getDay()]+" "+d.getDate()+" "+months[d.getMonth()]+" "+yyyy;
+    const opt=document.createElement("option");
+    opt.value=val; opt.textContent=label;
+    if(i===0)opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+
+
+function buildProjectsList(){
+  const dl=document.getElementById("projectsList");
+  if(!dl)return;
+  const names=new Set();
+  Object.values(entries).forEach(periods=>{
+    Object.values(periods).forEach(list=>{
+      list.forEach(e=>{ if(e.project&&e.project.trim()) names.add(e.project.trim()); });
+    });
+  });
+  dl.innerHTML=[...names].sort().map(n=>`<option value="${n}">`).join("");
+}
+
+
+function calcHoursFromTime(){
+  const fromEl=document.getElementById("entryFrom");
+  const toEl=document.getElementById("entryTo");
+  const hoursEl=document.getElementById("entryHours");
+  const preview=document.getElementById("hoursPreview");
+  if(!fromEl.value||!toEl.value){preview.style.display="none";return;}
+  const [fh,fm]=fromEl.value.split(":").map(Number);
+  const [th,tm]=toEl.value.split(":").map(Number);
+  let totalMins=(th*60+tm)-(fh*60+fm);
+  if(totalMins<=0) totalMins+=24*60; // overnight shift
+  const hrs=Math.round(totalMins/60*10)/10; // round to 1 decimal
+  hoursEl.value=hrs;
+  const fromFmt=formatTime12(fromEl.value);
+  const toFmt=formatTime12(toEl.value);
+  preview.style.display="block";
+  preview.textContent="⏱ "+fromFmt+" → "+toFmt+" = "+hrs+" "+t("hoursU");
+}
+function clearTimePicker(){
+  // If user types hours manually, clear the time fields
+  const fromEl=document.getElementById("entryFrom");
+  const toEl=document.getElementById("entryTo");
+  const preview=document.getElementById("hoursPreview");
+  if(fromEl)fromEl.value="";
+  if(toEl)toEl.value="";
+  if(preview)preview.style.display="none";
+}
+function formatTime12(timeStr){
+  if(!timeStr)return "";
+  const [h,m]=timeStr.split(":").map(Number);
+  const ampm=h>=12?"م":"ص";
+  const h12=h%12||12;
+  return h12+":"+(m<10?"0"+m:m)+" "+ampm;
+}
+
+async function addEntry(){
+  const h=parseFloat(document.getElementById("entryHours").value)||0;
+  const pr=document.getElementById("entryProject").value.trim();
+  const ci=document.getElementById("entryCity").value;
+  const fo=document.getElementById("entryFood").checked;
+  const notes=document.getElementById("entryNotes")?.value.trim()||"";
+  const fromT=document.getElementById("entryFrom").value||"";
+  const toT=document.getElementById("entryTo").value||"";
+  if(!pr||!ci)return toast(t("errFill"));
+  if(isNaN(h)||h<0||h>24)return toast(t("errHours"));
+  if(h===0&&!fo)return toast(t("errNoHoursNoFood"));
+  const date=document.getElementById("entryDate")?.value||getTodayStr();
+  const entry={date,hours:h,project:pr,city:ci,food:fo,status:"pending",id:Date.now(),
+    timeFrom:fromT, timeTo:toT, notes};
+  showLoading(true);
+  const res = await dbAddEntry(currentUser, entry);
+  if(!res.ok){ 
+    showLoading(false);
+    console.error("Supabase insert error:", res);
+    const msg = res?.data?.message||res?.data?.hint||"";
+    return toast("❌ فشل الحفظ" + (msg?" — "+msg:""));
+  }
+  const p=getPeriod(periodOffset);
+  getEnt(currentUser,p.key).push(entry);
+  buildProjectsList();
+  showLoading(false);
+  document.getElementById("entryHours").value="";
+  document.getElementById("entryProject").value="";
+  document.getElementById("entryCity").value="";
+  document.getElementById("entryFood").checked=false;
+  document.getElementById("entryFrom").value="";
+  document.getElementById("entryTo").value="";
+  const notesEl=document.getElementById("entryNotes");
+  if(notesEl)notesEl.value="";
+  buildDateSelect(); // reset to today
+  const prev=document.getElementById("hoursPreview");
+  if(prev)prev.style.display="none";
+  renderWT(); toast(t("toastAdded"));
+}
+function fmtTimeRange(e){
+  if(e.timeFrom&&e.timeTo) return formatTime12(e.timeFrom)+"–"+formatTime12(e.timeTo);
+  return "—";
+}
+// Check if worker can still edit an entry (within 2 days, not approved)
+function canWorkerEdit(entry){
+  if(entry.status==="approved") return false; // approved = locked
+  const parts=entry.date.split("/");
+  const entryDate=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  const now=new Date(); now.setHours(0,0,0,0);
+  const diffDays=Math.floor((now-entryDate)/(1000*60*60*24));
+  return diffDays<=2;
+}
+
+function renderWT(){
+  const p=getPeriod(periodOffset),list=getEnt(currentUser,p.key);
+  document.getElementById("wTotalH").textContent=list.reduce((s,e)=>s+e.hours,0);
+  document.getElementById("wApprH").textContent=list.filter(e=>e.status==="approved").reduce((s,e)=>s+e.hours,0);
+  document.getElementById("wFoodD").textContent=list.filter(e=>e.food).length;
+  const body=document.getElementById("wTableBody");
+  if(!list.length){body.innerHTML="<div class='empty-state'><div class='empty-icon'>📋</div>"+t("emptyMsg")+"</div>";return;}
+  const totalH=list.reduce((s,e)=>s+e.hours,0),foodD=list.filter(e=>e.food).length;
+  body.innerHTML=buildTable(
+    [t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus"),t("thNotes"),t("thActions")],
+    list.map(e=>[
+      e.date, fmtTimeRange(e), e.project, cityLabel(e.city), e.hours,
+      e.food?"<span class='food-yes'>✓</span>":"<span class='food-no'>—</span>",
+      "<span class='badge "+stClass(e.status)+"'>"+stLabel(e.status)+"</span>",
+      e.notes?`<span style="font-size:11px;color:#666;">${e.notes}</span>`:"—",
+      canWorkerEdit(e)
+        ? `<button class="bsa no-print" onclick="openWorkerEdit('${e.id}')">${t("btnEdit")}</button>`
+        : `<span style="font-size:11px;color:#ccc;">—</span>`
+    ]),
+    [t("totalLbl"),"","","","",
+      "<span class='tp tp-b'>"+totalH+" "+t("hoursU")+"</span>",
+      "<span class='tp tp-a'>"+foodD+" "+t("foodU")+"</span>",
+      "<span class='tp tp-g'>"+list.length+" "+t("workU")+"</span>","",""]
+  );
+}
+
+// ================================================================
+// SUPERVISOR OVERVIEW
+// ================================================================
+// ================================================================
+// SUPERVISOR OVERVIEW — multi-select workers, two tables
+// ================================================================
+function buildSOWorkers(){
+  const div=document.getElementById("soWorkersCheck"); if(!div)return;
+  div.innerHTML=Object.keys(workers).map(k=>`
+    <div class="wcheck checked" id="sow_${k}" onclick="toggleSOWorker('${k}')">
+      <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#185FA5;flex-shrink:0;overflow:hidden;">
+        ${workers[k].avatar?`<img src="${workers[k].avatar}" style="width:100%;height:100%;object-fit:cover;">`:initials(workers[k].name)}
+      </div>
+      <input type="checkbox" id="sowcb_${k}" checked/>
+      <label for="sowcb_${k}" style="pointer-events:none;">${workers[k].name}
+        <span style="font-size:10px;color:#888;"> (${roleLabel(workers[k].role)})</span>
+      </label>
+    </div>`).join("");
+}
+function toggleSOWorker(k){
+  const cb=document.getElementById("sowcb_"+k);
+  if(cb){cb.checked=!cb.checked;document.getElementById("sow_"+k).classList.toggle("checked",cb.checked);}
+  renderSO();
+}
+function soSelectAll(val){
+  Object.keys(workers).forEach(k=>{
+    const cb=document.getElementById("sowcb_"+k);
+    if(cb){cb.checked=val;document.getElementById("sow_"+k).classList.toggle("checked",val);}
+  });
+  renderSO();
+}
+function getSOSelected(){
+  return Object.keys(workers).filter(k=>document.getElementById("sowcb_"+k)?.checked);
+}
+
+function renderSO(){
+  const p=getPeriod(periodOffset);
+  const selWks=getSOSelected();
+  let all=[];
+  Object.keys(workers).forEach(wk=>{
+    if(!selWks.includes(wk))return;
+    getEnt(wk,p.key).forEach(e=>all.push({...e,wk,wName:workers[wk].name,wRole:workers[wk].role}));
+  });
+
+  // Stats over ALL workers
+  let allForStats=[];
+  Object.keys(workers).forEach(wk=>getEnt(wk,p.key).forEach(e=>allForStats.push(e)));
+  document.getElementById("sTotH").textContent=allForStats.filter(e=>e.status==="approved").reduce((s,e)=>s+e.hours,0);
+  document.getElementById("sPendC").textContent=allForStats.filter(e=>e.status==="pending").length;
+  document.getElementById("sApprC").textContent=allForStats.filter(e=>e.status==="approved").length;
+
+  // Show ALL entries (pending + approved + rejected) in pending table
+  const pendBody=document.getElementById("sPendBody");
+  if(pendBody){
+    if(!all.length){
+      pendBody.innerHTML="<div class='empty-state'><div class='empty-icon'>📋</div>"+t("emptyMsg")+"</div>";
+    } else {
+      pendBody.innerHTML=buildGroupedTable(all,true);
+    }
+  }
+
+  // Hide the approved table (no longer needed as separate section)
+  const apprBody=document.getElementById("sApprBody");
+  if(apprBody) apprBody.innerHTML="";
+  const apprCard=apprBody?.closest(".card");
+  if(apprCard) apprCard.style.display="none";
+}
+
+// Build grouped table: worker header then rows (no worker/role columns)
+function buildGroupedTable(entries, showActions){
+  const groups={}, order=[];
+  entries.forEach(e=>{
+    if(!groups[e.wk]){groups[e.wk]={name:e.wName,role:e.wRole,rows:[]};order.push(e.wk);}
+    groups[e.wk].rows.push(e);
+  });
+  let html="", grandApprH=0, grandFoodD=0, grandDays=0;
+  order.forEach(wk=>{
+    const g=groups[wk];
+    const approvedH=g.rows.filter(e=>e.status==="approved").reduce((s,e)=>s+e.hours,0);
+    const foodD=g.rows.filter(e=>e.food).length;
+    const pendingIds=g.rows.filter(e=>e.status==="pending").map(e=>e.id);
+    grandApprH+=approvedH; grandFoodD+=foodD; grandDays+=g.rows.length;
+
+    // Worker header with approve-all button
+    html+=`<div class="no-print" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#E6F1FB;border-bottom:1px solid #B5D4F4;flex-wrap:wrap;">
+      <div style="width:40px;height:40px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;overflow:hidden;">
+        ${workers[wk]?.avatar?`<img src="${workers[wk].avatar}" style="width:100%;height:100%;object-fit:cover;">`:initials(g.name)}
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#185FA5;">${g.name}</div>
+        <div style="font-size:11px;color:#555;">${roleLabel(g.role)}</div>
+      </div>
+      ${pendingIds.length>0?`<button class="no-print" onclick="approveAllWorker('${wk}',${JSON.stringify(pendingIds).replace(/"/g,"'")})"
+        style="background:#185FA5;color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;">
+        ✓ ${t("btnApproveAll")} (${pendingIds.length})
+      </button>`:""}
+    </div>
+    <div class="print-only" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#E6F1FB;border-bottom:1px solid #B5D4F4;">
+      <div style="width:36px;height:36px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">${initials(g.name)}</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:#185FA5;">${g.name}</div>
+        <div style="font-size:11px;color:#555;">${roleLabel(g.role)}</div>
+      </div>
+    </div>`;
+
+    // Columns: Date(0) Time(1) Project(2) City(3) Hours(4) Food(5) Status(6) Notes(7) Actions(8)
+    const cols=[t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus"),t("thNotes"),t("thActions")];
+    const rows=g.rows.map(e=>{
+      const r=[
+        e.date,
+        fmtTimeRange(e),
+        e.project,
+        cityLabel(e.city),
+        e.hours,
+        e.food?"<span class='food-yes'>✓</span>":"<span class='food-no'>—</span>",
+        "<span class='badge "+stClass(e.status)+"'>"+stShort(e.status)+"</span>",
+        e.notes?`<span style="font-size:11px;color:#666;">${e.notes}</span>`:"—",
+        `<div class="action-btns no-print">
+          <button class="bsa" onclick="openEdit('${e.wk}','${e.id}')">${t("btnEdit")}</button>
+          ${e.status!=="approved"?`<button class="bsg" onclick="chStatus('${e.wk}','${e.id}','approved')">${t("btnApprove")}</button>`:""}
+          ${e.status!=="rejected"?`<button class="bsr" onclick="chStatus('${e.wk}','${e.id}','rejected')">${t("btnReject")}</button>`:""}
+          <button class="bsdel" onclick="openDeleteEntry('${e.wk}','${e.id}')">🗑</button>
+        </div>`
+      ];
+      return r;
+    });
+    // Totals row — indices: 0=date, 4=hours, 5=food, 6=workdays, rest empty
+    const tot=Array(cols.length).fill("");
+    tot[0]=t("totalLbl");
+    tot[4]="<span class='tp tp-b'>"+approvedH+" "+t("hoursU")+"</span>";
+    tot[5]="<span class='tp tp-a'>"+foodD+" "+t("foodU")+"</span>";
+    tot[6]="<span class='tp tp-g'>"+g.rows.length+" "+t("workU")+"</span>";
+    html+=buildTable(cols,rows,tot);
+    html+="<div style='height:12px;'></div>";
+  });
+  if(order.length>1){
+    html+=`<div style="background:#1a3d6b;color:white;border-radius:8px;padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+      <strong>${t("totalLbl")} — ${t("allEmp")}</strong>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:12px;">${grandApprH} ${t("hoursU")}</span>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:12px;">${grandFoodD} ${t("foodU")}</span>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:3px 12px;font-size:12px;">${grandDays} ${t("workU")}</span>
+    </div>`;
+  }
+  return html;
+}
+function setFilter(wk){filterWorker=wk;renderSO();}
+
+async function chStatus(wk,id,status){
+  const p=getPeriod(periodOffset),list=getEnt(wk,p.key),e=list.find(e=>String(e.id)===String(id));
+  if(!e)return;
+  showLoading(true);
+  const supName=document.getElementById("userName").textContent;
+  const ok=await dbUpdateStatus(id, status, supName);
+  if(!ok){ showLoading(false); return toast("❌ فشل التحديث"); }
+  e.status=status;
+  if(status==="approved"){e.approved_at=new Date().toISOString();e.approved_by=supName;}
+  else{e.approved_at=null;e.approved_by="";}
+  showLoading(false);
+  renderSO(); toast(status==="approved"?t("toastAppr"):t("toastRej"));
+}
+
+// ================================================================
+// SHARED TABLE BUILDER
+// ================================================================
+// Returns true if dateStr (yyyy/mm/dd) is a Friday
+function isFriday(dateStr){
+  if(!dateStr)return false;
+  const p=dateStr.split("/");
+  return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])).getDay()===5;
+}
+
+function buildTable(headers,rows,totals,datecol=0){
+  const h=headers.map(h=>"<th>"+h+"</th>").join("");
+  // rows is an array of arrays; check first cell for Friday
+  const r=rows.map(row=>{
+    // extract plain text from first cell to detect date
+    const firstCell=String(row[datecol]||"").replace(/<[^>]+>/g,"").trim();
+    const fri=isFriday(firstCell);
+    const style=fri?' style="background:#FFF8E6;border-right:3px solid #E8A800;"':'';
+    return "<tr"+style+">"+row.map(c=>"<td>"+c+"</td>").join("")+"</tr>";
+  }).join("");
+  const tot="<tr class='totals-row'>"+totals.map(c=>"<td>"+c+"</td>").join("")+"</tr>";
+  return`<div class="tbl-wrap"><table><thead><tr>${h}</tr></thead><tbody>${r}${tot}</tbody></table></div>`;
+}
+
+// Approve all pending entries for a worker
+async function approveAllWorker(wk, ids){
+  if(!ids||!ids.length)return;
+  showLoading(true);
+  let allOk=true;
+  for(const id of ids){
+    const supName=document.getElementById("userName").textContent;
+    const ok=await dbUpdateStatus(id,"approved", supName);
+    if(!ok){allOk=false;break;}
+    const p=getPeriod(periodOffset),list=getEnt(wk,p.key);
+    const e=list.find(e=>String(e.id)===String(id));
+    if(e){e.status="approved";e.approved_at=new Date().toISOString();e.approved_by=supName;}
+  }
+  showLoading(false);
+  if(allOk){renderSO();toast(t("toastApproveAll"));}
+  else toast("❌ حدث خطأ أثناء الاعتماد");
+}
+
+// ================================================================
+// EDIT WORKER INFO (name, pin, notes, avatar)
+// ================================================================
+let editingWorkerKey=null, avatarWorkerKey=null;
+
+function openEditWorker(k){
+  editingWorkerKey=k;
+  document.getElementById("ewName").value=workers[k].name;
+  document.getElementById("ewPin").value=workers[k].pin;
+  document.getElementById("ewNotes").value=workers[k].notes||"";
+  document.getElementById("editWorkerModal").style.display="flex";
+}
+function closeEditWorker(){document.getElementById("editWorkerModal").style.display="none";editingWorkerKey=null;}
+async function confirmEditWorker(){
+  if(!editingWorkerKey)return;
+  const name=document.getElementById("ewName").value.trim();
+  const pin=document.getElementById("ewPin").value.trim();
+  const notes=document.getElementById("ewNotes").value.trim();
+  if(!name)return toast(t("errWName"));
+  if(pin.length<4||!/^\d+$/.test(pin))return toast(t("errPinFmt"));
+  showLoading(true);
+  const ok=await dbUpdateWorker(editingWorkerKey,{name,pin,notes});
+  if(!ok){showLoading(false);return toast("❌ فشل الحفظ");}
+  workers[editingWorkerKey].name=name;
+  workers[editingWorkerKey].pin=pin;
+  workers[editingWorkerKey].notes=notes;
+  showLoading(false);closeEditWorker();buildWorkerSel();renderMW();toast(t("toastSaved"));
+}
+
+// ================================================================
+// AVATAR (profile photo)
+// ================================================================
+function openAvatarEdit(k){
+  avatarWorkerKey=k;
+  const w=workers[k];
+  const prev=document.getElementById("avPreview");
+  prev.innerHTML=w.avatar
+    ?`<img src="${w.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+    :`<span>${initials(w.name)}</span>`;
+  document.getElementById("avFile").value="";
+  document.getElementById("avatarModal").style.display="flex";
+}
+function closeAvatarModal(){document.getElementById("avatarModal").style.display="none";avatarWorkerKey=null;}
+
+function previewAvatar(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    document.getElementById("avPreview").innerHTML=
+      `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveAvatar(){
+  if(!avatarWorkerKey)return;
+  const file=document.getElementById("avFile").files[0];
+  if(!file)return toast(t("errNoPhoto"));
+  // Resize image to max 200x200 and convert to base64
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const img=new Image();
+    img.onload=async function(){
+      const canvas=document.createElement("canvas");
+      const MAX=200;
+      let w=img.width,h=img.height;
+      if(w>h){if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}}
+      else{if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      const b64=canvas.toDataURL("image/jpeg",0.75);
+      showLoading(true);
+      const ok=await dbUpdateWorker(avatarWorkerKey,{avatar:b64});
+      if(!ok){showLoading(false);return toast("❌ فشل رفع الصورة");}
+      workers[avatarWorkerKey].avatar=b64;
+      showLoading(false);closeAvatarModal();renderMW();
+      // Update worker cards in supervisor overview
+      buildSOWorkers();toast(t("toastPhotoSaved"));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function removeAvatar(){
+  if(!avatarWorkerKey)return;
+  showLoading(true);
+  const ok=await dbUpdateWorker(avatarWorkerKey,{avatar:""});
+  if(!ok){showLoading(false);return toast("❌ فشل الحذف");}
+  workers[avatarWorkerKey].avatar="";
+  showLoading(false);closeAvatarModal();renderMW();buildSOWorkers();toast(t("toastPhotoRemoved"));
+}
+
+
+let deletingEntry=null;
+function openDeleteEntry(wk,id){
+  const p=getPeriod(periodOffset),list=getEnt(wk,p.key);
+  const e=list.find(e=>String(e.id)===String(id));
+  if(!e)return;
+  deletingEntry={wk,id};
+  document.getElementById("deConfirmTxt").innerHTML=
+    `${t("deConfirmMsg")}<br><strong>${workers[wk].name}</strong> — ${e.date} — ${e.project} — ${e.hours} ${t("hoursU")}`;
+  document.getElementById("deleteEntryModal").style.display="flex";
+}
+function closeDeleteEntry(){document.getElementById("deleteEntryModal").style.display="none";deletingEntry=null;}
+async function confirmDeleteEntry(){
+  if(!deletingEntry)return;
+  showLoading(true);
+  const ok=await dbDeleteEntry(deletingEntry.id);
+  if(!ok){showLoading(false);return toast("❌ فشل الحذف");}
+  // Remove from local state
+  const p=getPeriod(periodOffset),list=getEnt(deletingEntry.wk,p.key);
+  const idx=list.findIndex(e=>String(e.id)===String(deletingEntry.id));
+  if(idx>-1) list.splice(idx,1);
+  showLoading(false);closeDeleteEntry();renderSO();toast(t("toastEntryDeleted"));
+}
+
+// ================================================================
+// WORKER SELF-EDIT (within 2 days, pending only)
+// ================================================================
+let editingWE=null;
+function openWorkerEdit(id){
+  const p=getPeriod(periodOffset),list=getEnt(currentUser,p.key);
+  const e=list.find(e=>String(e.id)===String(id));
+  if(!e||!canWorkerEdit(e))return toast(t("errEditLocked"));
+  editingWE=id;
+  // Build date dropdown (last 3 days)
+  buildWEDateSelect(e.date);
+  // Build city select
+  buildCitySel("weCity");
+  document.getElementById("weCity").value=cityKey(e.city);
+  // Fill other fields
+  document.getElementById("weHours").value=e.hours;
+  document.getElementById("weFrom").value=e.timeFrom||"";
+  document.getElementById("weTo").value=e.timeTo||"";
+  document.getElementById("weProject").value=e.project;
+  document.getElementById("weFood").checked=e.food;
+  const prev=document.getElementById("weHoursPreview");
+  if(e.timeFrom&&e.timeTo){
+    prev.style.display="block";
+    prev.textContent="⏱ "+formatTime12(e.timeFrom)+" → "+formatTime12(e.timeTo)+" = "+e.hours+" "+t("hoursU");
+  } else prev.style.display="none";
+  document.getElementById("workerEditModal").style.display="flex";
+}
+function buildWEDateSelect(currentDate){
+  const sel=document.getElementById("weDate"); if(!sel)return;
+  sel.innerHTML="";
+  const days=t("days"), months=t("months");
+  for(let i=0;i<=2;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const yyyy=d.getFullYear();
+    const mm=String(d.getMonth()+1).padStart(2,"0");
+    const dd=String(d.getDate()).padStart(2,"0");
+    const val=yyyy+"/"+mm+"/"+dd;
+    const label=(i===0?(lang==="en"?"Today ":lang==="ur"?"آج ":"اليوم — "):
+                  i===1?(lang==="en"?"Yesterday ":lang==="ur"?"کل ":"أمس — "):
+                  (lang==="en"?"2 days ago ":lang==="ur"?"2 دن پہلے ":"قبل يومين — "))+
+               days[d.getDay()]+" "+d.getDate()+" "+months[d.getMonth()]+" "+yyyy;
+    const opt=document.createElement("option");
+    opt.value=val; opt.textContent=label;
+    if(val===currentDate) opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+
+function closeWorkerEditModal(){document.getElementById("workerEditModal").style.display="none";editingWE=null;}
+function calcWEHours(){
+  const f=document.getElementById("weFrom"),tt=document.getElementById("weTo");
+  const hEl=document.getElementById("weHours"),prev=document.getElementById("weHoursPreview");
+  if(!f.value||!tt.value){prev.style.display="none";return;}
+  const [fh,fm]=f.value.split(":").map(Number);
+  const [th,tm]=tt.value.split(":").map(Number);
+  let mins=(th*60+tm)-(fh*60+fm);if(mins<=0)mins+=24*60;
+  const hrs=Math.round(mins/60*10)/10;
+  hEl.value=hrs;
+  prev.style.display="block";
+  prev.textContent="⏱ "+formatTime12(f.value)+" → "+formatTime12(tt.value)+" = "+hrs+" "+t("hoursU");
+}
+function clearWETime(){
+  document.getElementById("weFrom").value="";
+  document.getElementById("weTo").value="";
+  document.getElementById("weHoursPreview").style.display="none";
+}
+async function confirmWorkerEdit(){
+  if(!editingWE)return;
+  const p=getPeriod(periodOffset),list=getEnt(currentUser,p.key);
+  const e=list.find(e=>String(e.id)===String(editingWE));
+  if(!e||!canWorkerEdit(e)){closeWorkerEditModal();return toast(t("errEditLocked"));}
+  const nh=parseFloat(document.getElementById("weHours").value);
+  const nf=document.getElementById("weFood").checked;
+  const nFrom=document.getElementById("weFrom").value||"";
+  const nTo=document.getElementById("weTo").value||"";
+  const nDate=document.getElementById("weDate").value||e.date;
+  const nProject=document.getElementById("weProject").value.trim();
+  const nCity=document.getElementById("weCity").value;
+  if(isNaN(nh)||nh<=0||nh>24)return toast(t("errHours"));
+  if(!nProject||!nCity)return toast(t("errFill"));
+  showLoading(true);
+  const ok=await dbUpdateEntry(editingWE,{
+    date:nDate, hours:nh, food:nf,
+    time_from:nFrom, time_to:nTo,
+    project:nProject, city:nCity
+  });
+  if(!ok){showLoading(false);return toast("❌ فشل الحفظ");}
+  e.date=nDate; e.hours=nh; e.food=nf;
+  e.timeFrom=nFrom; e.timeTo=nTo;
+  e.project=nProject; e.city=nCity;
+  buildProjectsList();
+  showLoading(false);closeWorkerEditModal();renderWT();toast(t("toastSaved"));
+}
+
+function calcEditHours(){
+  const f=document.getElementById("editFrom"),tt=document.getElementById("editTo");
+  const hEl=document.getElementById("editHours"),prev=document.getElementById("editHoursPreview");
+  if(!f||!tt||!f.value||!tt.value){if(prev)prev.style.display="none";return;}
+  const [fh,fm]=f.value.split(":").map(Number);
+  const [th,tm]=tt.value.split(":").map(Number);
+  let mins=(th*60+tm)-(fh*60+fm);
+  if(mins<=0)mins+=24*60;
+  const hrs=Math.round(mins/60*10)/10;
+  hEl.value=hrs;
+  if(prev){prev.style.display="block";prev.textContent="⏱ "+formatTime12(f.value)+" → "+formatTime12(tt.value)+" = "+hrs+" "+t("hoursU");}
+}
+function clearEditTime(){
+  const f=document.getElementById("editFrom"),tt=document.getElementById("editTo"),prev=document.getElementById("editHoursPreview");
+  if(f)f.value=""; if(tt)tt.value=""; if(prev)prev.style.display="none";
+}
+
+function openEdit(wk,id){
+  const p=getPeriod(periodOffset),list=getEnt(wk,p.key),e=list.find(e=>String(e.id)===String(id));
+  if(!e)return;editingE={wk,id};buildCitySel("editCity");
+  document.getElementById("editDate").value=e.date.replace(/\//g,"-");
+  document.getElementById("editHours").value=e.hours;
+  document.getElementById("editProject").value=e.project;
+  document.getElementById("editCity").value=cityKey(e.city);
+  document.getElementById("editStatus").value=e.status;
+  document.getElementById("editFood").checked=e.food;
+  const enEl=document.getElementById("editNotes"); if(enEl)enEl.value=e.notes||"";
+  // Show approved info if applicable
+  const aiEl=document.getElementById("editApprovedInfo");
+  if(aiEl){ if(e.approved_at&&e.approved_by){aiEl.style.display="block";aiEl.textContent="✓ "+t("approvedBy")+": "+e.approved_by+" — "+new Date(e.approved_at).toLocaleDateString();}else aiEl.style.display="none"; }
+  document.getElementById("editFrom").value=e.timeFrom||"";
+  document.getElementById("editTo").value=e.timeTo||"";
+  const prev=document.getElementById("editHoursPreview");
+  if(prev){ if(e.timeFrom&&e.timeTo){prev.style.display="block";prev.textContent="⏱ "+formatTime12(e.timeFrom)+" → "+formatTime12(e.timeTo)+" = "+e.hours+" "+t("hoursU");}else{prev.style.display="none";} }
+  document.getElementById("editModal").style.display="flex";
+}
+function closeEditModal(){document.getElementById("editModal").style.display="none";editingE=null;}
+async function confirmEdit(){
+  if(!editingE)return;
+  const nd=document.getElementById("editDate").value,nh=parseFloat(document.getElementById("editHours").value)||0;
+  const np=document.getElementById("editProject").value.trim(),nc=document.getElementById("editCity").value;
+  const ns=document.getElementById("editStatus").value,nf=document.getElementById("editFood").checked;
+  const nn=document.getElementById("editNotes")?.value.trim()||"";
+  if(!nd||!np||!nc)return toast(t("errFill"));
+  if(isNaN(nh)||nh<0||nh>24)return toast(t("errHours"));
+  if(nh===0&&!nf)return toast(t("errNoHoursNoFood"));
+  const nFrom=document.getElementById("editFrom").value||"";
+  const nTo=document.getElementById("editTo").value||"";
+  showLoading(true);
+  const ok = await dbUpdateEntry(editingE.id, {
+    date: nd.replace(/-/g,"/"), hours:nh, project:np, city:nc, status:ns, food:nf,
+    time_from:nFrom, time_to:nTo, notes:nn
+  });
+  if(!ok){ showLoading(false); return toast("❌ فشل الحفظ"); }
+  const p=getPeriod(periodOffset),list=getEnt(editingE.wk,p.key),e=list.find(e=>String(e.id)===String(editingE.id));
+  if(e){ e.date=nd.replace(/-/g,"/");e.hours=nh;e.project=np;e.city=nc;e.status=ns;e.food=nf;e.timeFrom=nFrom;e.timeTo=nTo;e.notes=nn; }
+  buildProjectsList();
+  showLoading(false); closeEditModal(); renderSO(); toast(t("toastSaved"));
+}
+
+// ================================================================
+// MANAGE WORKERS
+// ================================================================
+function renderMW(){
+  const keys=Object.keys(workers);
+  document.getElementById("wCount").textContent=keys.length+" "+t("recOf");
+  const body=document.getElementById("wManageTable");
+  if(!keys.length){body.innerHTML="<div class='empty-state'>"+t("emptyMsg")+"</div>";return;}
+  body.innerHTML=`<div class="tbl-wrap"><table><thead><tr>
+    <th>${t("thName")}</th><th>${t("thRole")}</th><th>${t("thPin")}</th><th>${t("thAccStatus")}</th><th>${t("thAction")}</th>
+  </tr></thead><tbody>
+  ${keys.map(k=>{
+    const isSusp=!!workers[k].suspended;
+    return `<tr style="${isSusp?'opacity:0.6;':''}">
+    <td><div style="display:flex;align-items:center;gap:10px;">
+      <div onclick="openAvatarEdit('${k}')" style="width:40px;height:40px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#185FA5;flex-shrink:0;cursor:pointer;overflow:hidden;border:2px solid ${isSusp?'#A32D2D':'#B5D4F4'};position:relative;" title="${t("changePhoto")}">
+        ${workers[k].avatar
+          ? `<img src="${workers[k].avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`
+          : `<span>${initials(workers[k].name)}</span>`}
+      </div>
+      <div>
+        <div style="font-weight:600;">${workers[k].name}</div>
+        ${workers[k].notes?`<div style="font-size:11px;color:#888;">${workers[k].notes}</div>`:""}
+      </div>
+    </div></td>
+    <td><select onchange="chRole('${k}',this.value)" style="width:auto;padding:5px 10px;font-size:13px;" ${isSusp?'disabled':''}>
+      <option value="worker" ${workers[k].role==="worker"?"selected":""}>${t("rW")}</option>
+      <option value="technician" ${workers[k].role==="technician"?"selected":""}>${t("rT")}</option>
+      <option value="supervisor" ${workers[k].role==="supervisor"?"selected":""}>${t("rS")}</option>
+    </select></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-family:monospace;letter-spacing:3px;" id="pin_${k}">${workers[k].pin}</span>
+        <button class="bsa" onclick="openEditWorker('${k}')" style="padding:3px 8px;font-size:11px;">${t("btnEdit")}</button>
+      </div>
+    </td>
+    <td>
+      ${isSusp
+        ? `<span class="badge" style="background:#FCEBEB;color:#A32D2D;">${t("statusSuspended")}</span>`
+        : `<span class="badge" style="background:#EAF3DE;color:#3B6D11;">${t("statusActive")}</span>`}
+    </td>
+    <td>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${isSusp
+          ? `<button class="bsg" onclick="toggleSuspend('${k}',false)">${t("btnUnsuspend")}</button>`
+          : `<button class="bsa" onclick="toggleSuspend('${k}',true)" style="background:#FAEEDA;color:#854F0B;">${t("btnSuspend")}</button>`}
+        <button class="bsr" onclick="openDel('${k}')">${t("btnDelete")}</button>
+      </div>
+    </td>
+  </tr>`;}).join("")}</tbody></table></div>`;
+}
+async function addWorker(){
+  const name=document.getElementById("newWName").value.trim();
+  const role=document.getElementById("newWRole").value;
+  const pin=document.getElementById("newWPin").value.trim();
+  if(!name)return toast(t("errWName"));
+  if(pin.length<4||!/^\d+$/.test(pin))return toast(t("errPinFmt"));
+  const id="w_"+Date.now();
+  showLoading(true);
+  const ok=await dbAddWorker(id,{name,role,pin});
+  if(!ok){showLoading(false);return toast("❌ فشل الإضافة");}
+  workers[id]={name,role,pin};
+  showLoading(false);
+  document.getElementById("newWName").value="";document.getElementById("newWPin").value="";
+  buildWorkerSel();renderMW();buildSOWorkers();buildReportWorkers();toast(t("toastWAdded"));
+}
+async function chRole(k,r){
+  showLoading(true);
+  const ok=await dbUpdateWorker(k,{role:r});
+  if(!ok){showLoading(false);return toast("❌ فشل التحديث");}
+  workers[k].role=r;showLoading(false);buildWorkerSel();
+}
+async function toggleSuspend(k,suspend){
+  showLoading(true);
+  const ok=await dbUpdateWorker(k,{suspended:suspend});
+  if(!ok){showLoading(false);return toast("❌ فشل التحديث");}
+  workers[k].suspended=suspend;
+  showLoading(false);
+  renderMW();buildWorkerSel();buildSOWorkers();
+  toast(suspend?t("toastSuspended"):t("toastUnsuspended"));
+}
+function openDel(k){
+  delWorkerKey=k;
+  document.getElementById("dConfirmTxt").innerHTML=t("delMsg1")+" <strong>"+workers[k].name+"</strong>? "+t("delMsg2");
+  document.getElementById("deleteModal").style.display="flex";
+}
+function closeDelModal(){document.getElementById("deleteModal").style.display="none";delWorkerKey=null;}
+async function confirmDel(){
+  if(!delWorkerKey)return;
+  const name=workers[delWorkerKey].name;
+  showLoading(true);
+  const ok=await dbDeleteWorker(delWorkerKey);
+  if(!ok){showLoading(false);return toast("❌ فشل الحذف");}
+  delete workers[delWorkerKey];delete entries[delWorkerKey];
+  showLoading(false);closeDelModal();buildWorkerSel();renderMW();renderSO();buildSOWorkers();buildReportWorkers();
+  toast(t("toastWDel")+": "+name);
+}
+
+// ================================================================
+// REPORTS ENGINE
+// ================================================================
+function setRType(type){
+  reportType=type;
+  document.querySelectorAll(".rtype-btn").forEach(b=>b.classList.remove("active"));
+  const el=document.getElementById("r"+type);if(el)el.classList.add("active");
+  updateReportDateUI();
+}
+function updateReportDateUI(){
+  const div=document.getElementById("rDateFilters");if(!div)return;
+  const now=new Date(),yyyy=now.getFullYear(),mm=now.getMonth()+1,isoToday=getTodayISO();
+  if(reportType==="daily"){
+    div.innerHTML=`<div class="form-row" style="max-width:300px;"><div class="field-group" style="margin:0;"><label class="field-label">${t("rDateLabel")}</label><input type="date" id="rDate" value="${isoToday}" max="${isoToday}"/></div></div>`;
+  }else if(reportType==="weekly"||reportType==="custom"){
+    div.innerHTML=`<div class="form-row" style="max-width:500px;">
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rFromLabel")}</label><input type="date" id="rFrom" value="${isoToday}" max="${isoToday}"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rToLabel")}</label><input type="date" id="rTo" value="${isoToday}" max="${isoToday}"/></div>
+    </div>`;
+  }else if(reportType==="monthly"){
+    let mOpts=t("months").map((m,i)=>`<option value="${i+1}" ${(i+1)===mm?"selected":""}>${m}</option>`).join("");
+    let yOpts="";for(let y=yyyy;y>=yyyy-5;y--)yOpts+=`<option value="${y}" ${y===yyyy?"selected":""}>${y}</option>`;
+    div.innerHTML=`<div class="form-row" style="max-width:500px;">
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rMonthLabel")}</label><select id="rMonth">${mOpts}</select></div>
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rYearLabel")}</label><select id="rYear">${yOpts}</select></div>
+    </div>`;
+  }else{
+    let yOpts="";for(let y=yyyy;y>=yyyy-10;y--)yOpts+=`<option value="${y}" ${y===yyyy?"selected":""}>${y}</option>`;
+    div.innerHTML=`<div class="form-row" style="max-width:260px;"><div class="field-group" style="margin:0;"><label class="field-label">${t("rYearLabel")}</label><select id="rYear">${yOpts}</select></div></div>`;
+  }
+}
+function buildReportWorkers(){
+  const div=document.getElementById("rWorkersCheck");if(!div)return;
+  div.innerHTML=Object.keys(workers).map(k=>`
+    <div class="wcheck checked" id="wc_${k}" onclick="toggleWCheck('${k}')">
+      <input type="checkbox" id="wcb_${k}" checked/>
+      <label for="wcb_${k}" style="pointer-events:none;">${workers[k].name} <span style="font-size:10px;color:#888;">(${roleLabel(workers[k].role)})</span></label>
+    </div>`).join("");
+}
+function toggleWCheck(k){
+  const cb=document.getElementById("wcb_"+k);
+  if(cb){cb.checked=!cb.checked;document.getElementById("wc_"+k).classList.toggle("checked",cb.checked);}
+}
+function selectAllWorkers(val){
+  Object.keys(workers).forEach(k=>{
+    const cb=document.getElementById("wcb_"+k);
+    if(cb){cb.checked=val;document.getElementById("wc_"+k).classList.toggle("checked",val);}
+  });
+}
+function getDateRange(){
+  const now=new Date(),yyyy=now.getFullYear(),mm=now.getMonth()+1,isoToday=getTodayISO();
+  if(reportType==="daily"){
+    const d=document.getElementById("rDate")?.value||isoToday;
+    const fd=new Date(d);fd.setHours(0,0,0,0);const td=new Date(d);td.setHours(23,59,59,999);
+    return{from:fd,to:td,label:isoToDisplay(d)};
+  }else if(reportType==="weekly"||reportType==="custom"){
+    const f=document.getElementById("rFrom")?.value||isoToday;const t2=document.getElementById("rTo")?.value||isoToday;
+    const fd=new Date(f);fd.setHours(0,0,0,0);const td=new Date(t2);td.setHours(23,59,59,999);
+    return{from:fd,to:td,label:isoToDisplay(f)+" – "+isoToDisplay(t2)};
+  }else if(reportType==="monthly"){
+    const m=parseInt(document.getElementById("rMonth")?.value||mm);const y=parseInt(document.getElementById("rYear")?.value||yyyy);
+    const fd=new Date(y,m-1,1);const td=new Date(y,m,0);td.setHours(23,59,59,999);
+    return{from:fd,to:td,label:t("months")[m-1]+" "+y};
+  }else{
+    const y=parseInt(document.getElementById("rYear")?.value||yyyy);
+    const fd=new Date(y,0,1);const td=new Date(y,11,31);td.setHours(23,59,59,999);
+    return{from:fd,to:td,label:""+y};
+  }
+}
+function generateReport(){
+  const selWks=Object.keys(workers).filter(k=>document.getElementById("wcb_"+k)?.checked);
+  if(!selWks.length)return toast(t("errSelWorkers"));
+  const range=getDateRange();
+  reportData=[];
+  selWks.forEach(wk=>{
+    const allEnt=[];
+    if(entries[wk])Object.values(entries[wk]).forEach(list=>allEnt.push(...list));
+    allEnt.forEach(e=>{const d=dateStrToObj(e.date);if(d>=range.from&&d<=range.to)reportData.push({...e,wk,wName:workers[wk].name,wRole:workers[wk].role});});
+  });
+  // Friday filter
+  const friOnly=document.getElementById("friFilter")?.checked;
+  if(friOnly) reportData=reportData.filter(e=>isFriday(e.date));
+  reportData.sort((a,b)=>a.date.localeCompare(b.date));
+  const rtLabels={daily:t("repDailyTitle"),weekly:t("repWeeklyTitle"),monthly:t("repMonthlyTitle"),yearly:t("repYearlyTitle"),custom:t("repCustomTitle")};
+  reportMeta={title:rtLabels[reportType],range:range.label,workers:selWks.map(k=>workers[k].name).join(", ")};
+
+  // Update PDF header for report
+  ["rPdfLogo"].forEach(id=>{const el=document.getElementById(id);if(el)el.src=LOGO_SRC;});
+  const rPdfT=document.getElementById("rPdfTitle");if(rPdfT)rPdfT.textContent=reportMeta.title+" | "+reportMeta.range;
+  const rPdfD=document.getElementById("rPdfDate");if(rPdfD)rPdfD.textContent=t("generatedOn")+": "+getTodayStr();
+  const rPdfR=document.getElementById("rPdfRight");if(rPdfR)rPdfR.textContent=reportMeta.workers;
+
+  document.getElementById("repTitle").textContent=reportMeta.title;
+  document.getElementById("repSub").textContent=reportMeta.range+" | "+reportMeta.workers;
+  const totalH=reportData.reduce((s,e)=>s+e.hours,0),foodD=reportData.filter(e=>e.food).length;
+  document.getElementById("repPills").innerHTML=
+    `<div class="r-pill">${totalH} ${t("hoursU")}</div>
+     <div class="r-pill">${reportData.length} ${t("workU")}</div>
+     <div class="r-pill">${foodD} ${t("foodU")}</div>`;
+
+  if(!reportData.length){
+    document.getElementById("reportResult").style.display="none";
+    document.getElementById("noReport").style.display="block";
+    document.getElementById("noRepMsg").textContent=lang==="en"?"No records found for selected period.":lang==="ur"?"کوئی ریکارڈ نہیں۔":"لا توجد سجلات للفترة المحددة.";
+    return;
+  }
+  document.getElementById("noReport").style.display="none";
+  document.getElementById("reportResult").style.display="block";
+  document.getElementById("repTableTitle").textContent=reportMeta.title+" – "+reportMeta.range;
+  const body=document.getElementById("repTableBody");
+
+  // Group by worker - each worker gets their own header + table
+  const workerGroups = {};
+  const workerOrder = [];
+  reportData.forEach(e=>{
+    if(!workerGroups[e.wk]){ workerGroups[e.wk]={name:e.wName,role:e.wRole,entries:[]}; workerOrder.push(e.wk); }
+    workerGroups[e.wk].entries.push(e);
+  });
+
+  let html = "";
+  let grandApprH=0, grandFoodD=0, grandDays=0;
+
+  workerOrder.forEach(wk=>{
+    const grp=workerGroups[wk];
+    // For display: show all entries
+    // For print/export: approved only
+    const allEntries=grp.entries;
+    const approvedEntries=grp.entries.filter(e=>e.status==="approved");
+    const approvedH=approvedEntries.reduce((s,e)=>s+e.hours,0);
+    const foodD=approvedEntries.filter(e=>e.food).length;
+    grandApprH+=approvedH; grandFoodD+=foodD; grandDays+=approvedEntries.length;
+
+    // Worker header
+    html+=`<div class="worker-section-header print-only">
+      <h3>${grp.name}</h3>
+      <p>${roleLabel(grp.role)}</p>
+    </div>`;
+    html+=`<div class="worker-name-screen no-print" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;background:#E6F1FB;border-radius:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <div style="font-size:14px;font-weight:600;color:#185FA5;">
+        ${grp.name} — <span class="badge ${roleClass(grp.role)}">${roleLabel(grp.role)}</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-excel" onclick="exportWorkerRepExcel('${wk}')" style="padding:4px 10px;font-size:11px;">Excel ↓</button>
+        <button class="btn-pdf" onclick="printWorkerReport('${wk}')" style="padding:4px 10px;font-size:11px;">🖨 PDF</button>
+      </div>
+    </div>`;
+
+    // Screen table: all entries with correct column order
+    const screenRows=allEntries.map(e=>[
+      e.date, fmtTimeRange(e), e.project, cityLabel(e.city), e.hours,
+      e.food?"<span class='food-yes'>✓</span>":"<span class='food-no'>—</span>",
+      "<span class='badge "+stClass(e.status)+"'>"+stShort(e.status)+"</span>",
+      e.notes?`<span style="font-size:11px;color:#666;">${e.notes}</span>`:"—"
+    ]);
+    const screenTot=Array(8).fill("");
+    screenTot[0]=t("totalLbl");
+    screenTot[4]="<span class='tp tp-b'>"+approvedH+" "+t("hoursU")+"</span>";
+    screenTot[5]="<span class='tp tp-a'>"+foodD+" "+t("foodU")+"</span>";
+    screenTot[6]="<span class='tp tp-g'>"+approvedEntries.length+" "+t("workU")+"</span>";
+    html+=`<div class="no-print">`;
+    html+=buildTable(
+      [t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus"),t("thNotes")],
+      screenRows, screenTot
+    );
+    html+=`</div>`;
+
+    // Print table: approved only
+    if(approvedEntries.length>0){
+      const printRows=approvedEntries.map(e=>[
+        e.date, fmtTimeRange(e), e.project, cityLabel(e.city), e.hours,
+        e.food?"✓":"—",
+        e.notes||"—"
+      ]);
+      const printTot=Array(7).fill("");
+      printTot[0]=t("totalLbl");
+      printTot[4]=""+approvedH+" "+t("hoursU");
+      printTot[5]=""+foodD+" "+t("foodU");
+      printTot[6]=""+approvedEntries.length+" "+t("workU");
+      html+=`<div class="print-only">`;
+      html+=buildTable(
+        [t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thNotes")],
+        printRows, printTot
+      );
+      html+=`</div>`;
+    }
+
+    html+=`<div style="margin-bottom:20px;"></div>`;
+  });
+
+  // Grand total
+  if(workerOrder.length>1){
+    html+=`<div style="background:#1a3d6b;color:white;border-radius:8px;padding:10px 16px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <strong>${t("totalLbl")} — ${t("allEmp")}</strong>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:12px;">${grandApprH} ${t("hoursU")}</span>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:12px;">${grandFoodD} ${t("foodU")}</span>
+      <span style="background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:12px;">${grandDays} ${t("workU")}</span>
+    </div>`;
+  }
+  body.innerHTML=html;
+}
+
+// ================================================================
+// MY REPORTS
+// ================================================================
+let myRType="daily";
+function buildMyReports(){
+  const div=document.getElementById("myReportContent");
+  div.innerHTML=`<div class="report-filters">
+    <div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:1rem;">${t("wtab2")}</div>
+    <div style="font-size:12px;color:#888;font-weight:500;margin-bottom:8px;">${t("rTypeLabel")}</div>
+    <div class="report-type-tabs">
+      <button class="rtype-btn active" onclick="setMyRType(this,'daily')">${t("rdaily")}</button>
+      <button class="rtype-btn" onclick="setMyRType(this,'monthly')">${t("rmonthly")}</button>
+      <button class="rtype-btn" onclick="setMyRType(this,'yearly')">${t("ryearly")}</button>
+      <button class="rtype-btn" onclick="setMyRType(this,'custom')">${t("rcustom")}</button>
+    </div>
+    <div id="myRDateFilters" style="margin-top:1rem;"></div>
+    <button class="btn btn-blue" onclick="generateMyReport()" style="margin-top:1rem;">${t("btnGenRep")}</button>
+  </div><div id="myRepResult"></div>`;
+  myRType="daily";updateMyDateUI();
+}
+function setMyRType(btn,type){
+  myRType=type;
+  document.querySelectorAll("#myReportContent .rtype-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");updateMyDateUI();
+}
+function updateMyDateUI(){
+  const div=document.getElementById("myRDateFilters");if(!div)return;
+  const now=new Date(),yyyy=now.getFullYear(),mm=now.getMonth()+1,isoToday=getTodayISO();
+  if(myRType==="daily"){
+    div.innerHTML=`<div class="form-row" style="max-width:300px;"><div class="field-group" style="margin:0;"><label class="field-label">${t("rDateLabel")}</label><input type="date" id="myRDate" value="${isoToday}" max="${isoToday}"/></div></div>`;
+  }else if(myRType==="monthly"){
+    let mOpts=t("months").map((m,i)=>`<option value="${i+1}" ${(i+1)===mm?"selected":""}>${m}</option>`).join("");
+    let yOpts="";for(let y=yyyy;y>=yyyy-5;y--)yOpts+=`<option value="${y}" ${y===yyyy?"selected":""}>${y}</option>`;
+    div.innerHTML=`<div class="form-row" style="max-width:500px;">
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rMonthLabel")}</label><select id="myRMonth">${mOpts}</select></div>
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rYearLabel")}</label><select id="myRYear">${yOpts}</select></div>
+    </div>`;
+  }else if(myRType==="yearly"){
+    let yOpts="";for(let y=yyyy;y>=yyyy-10;y--)yOpts+=`<option value="${y}" ${y===yyyy?"selected":""}>${y}</option>`;
+    div.innerHTML=`<div class="form-row" style="max-width:260px;"><div class="field-group" style="margin:0;"><label class="field-label">${t("rYearLabel")}</label><select id="myRYear">${yOpts}</select></div></div>`;
+  }else{
+    div.innerHTML=`<div class="form-row" style="max-width:500px;">
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rFromLabel")}</label><input type="date" id="myRFrom" value="${isoToday}" max="${isoToday}"/></div>
+      <div class="field-group" style="margin:0;"><label class="field-label">${t("rToLabel")}</label><input type="date" id="myRTo" value="${isoToday}" max="${isoToday}"/></div>
+    </div>`;
+  }
+}
+function generateMyReport(){
+  const now=new Date(),yyyy=now.getFullYear(),mm=now.getMonth()+1,isoToday=getTodayISO();
+  let from,to,rangeLabel;
+  if(myRType==="daily"){const d=document.getElementById("myRDate")?.value||isoToday;from=new Date(d);from.setHours(0,0,0,0);to=new Date(d);to.setHours(23,59,59,999);rangeLabel=isoToDisplay(d);}
+  else if(myRType==="monthly"){
+    const m=parseInt(document.getElementById("myRMonth")?.value||mm),y=parseInt(document.getElementById("myRYear")?.value||yyyy);
+    from=new Date(y,m-1,1);to=new Date(y,m,0);to.setHours(23,59,59,999);rangeLabel=t("months")[m-1]+" "+y;
+  }else if(myRType==="yearly"){
+    const y=parseInt(document.getElementById("myRYear")?.value||yyyy);
+    from=new Date(y,0,1);to=new Date(y,11,31);to.setHours(23,59,59,999);rangeLabel=""+y;
+  }else{
+    const f=document.getElementById("myRFrom")?.value||isoToday,t2=document.getElementById("myRTo")?.value||isoToday;
+    from=new Date(f);from.setHours(0,0,0,0);to=new Date(t2);to.setHours(23,59,59,999);rangeLabel=isoToDisplay(f)+" – "+isoToDisplay(t2);
+  }
+  const allEnt=[];
+  if(entries[currentUser])Object.values(entries[currentUser]).forEach(list=>allEnt.push(...list));
+  const data=allEnt.filter(e=>{const d=dateStrToObj(e.date);return d>=from&&d<=to;}).sort((a,b)=>a.date.localeCompare(b.date));
+  const result=document.getElementById("myRepResult");
+  if(!data.length){result.innerHTML=`<div class="no-results"><div style="font-size:36px;">📊</div><div style="margin-top:12px;">${lang==="en"?"No records found.":lang==="ur"?"کوئی ریکارڈ نہیں۔":"لا توجد سجلات."}</div></div>`;return;}
+  const totalH=data.reduce((s,e)=>s+e.hours,0),foodD=data.filter(e=>e.food).length;
+  const tableHtml=buildTable(
+    [t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus")],
+    data.map(e=>[e.date,fmtTimeRange(e),e.project,cityLabel(e.city),e.hours,
+      e.food?"<span class='food-yes'>✓</span>":"<span class='food-no'>—</span>",
+      "<span class='badge "+stClass(e.status)+"'>"+stLabel(e.status)+"</span>"]),
+    [t("totalLbl"),"","",
+      "<span class='tp tp-b'>"+totalH+" "+t("hoursU")+"</span>",
+      "<span class='tp tp-a'>"+foodD+" "+t("foodU")+"</span>",
+      "<span class='tp tp-g'>"+data.length+" "+t("workU")+"</span>"]
+  );
+  // store for print
+  window._myRepData={data,rangeLabel,workerName:workers[currentUser].name,tableHtml,totalH,foodD};
+  result.innerHTML=`
+    <div class="report-result-header no-print">
+      <div><div class="report-result-title">${t("wTableT")}</div><div class="report-result-sub">${rangeLabel} | ${workers[currentUser].name}</div></div>
+      <div class="report-summary-pills"><div class="r-pill">${totalH} ${t("hoursU")}</div><div class="r-pill">${data.length} ${t("workU")}</div><div class="r-pill">${foodD} ${t("foodU")}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">${rangeLabel}</span>
+        <div class="card-actions no-print">
+          <button class="btn-excel" onclick="exportMyRepExcel()">Excel ↓</button>
+          <button class="btn-pdf" onclick="printMyReport()">🖨 PDF</button>
+        </div>
+      </div>
+      <div id="myRepTable">${tableHtml}</div>
+    </div>`;
+}
+
+// ================================================================
+// PDF via Browser Print (preserves Arabic)
+// ================================================================
+function preparePDFHeader(logoIds, titleIds, dateIds, rightIds, titleText, dateText, rightText){
+  // Set logos
+  logoIds.forEach(id=>{const el=document.getElementById(id);if(el){el.src=LOGO_SRC;}});
+  titleIds.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=titleText;});
+  dateIds.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t("generatedOn")+": "+getTodayStr();});
+  rightIds.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=rightText;});
+}
+
+// ================================================================
+// PDF SIGNATURE FOOTER
+// ================================================================
+// ================================================================
+// FILENAME SANITIZER — browsers strip / \ : * ? " < > | from titles
+// ================================================================
+function safeFileName(str){
+  return String(str||"")
+    .replace(/[\/\\:*?"<>|]/g,"-")   // illegal chars → dash
+    .replace(/–|—/g,"_to_")           // en/em dash → _to_
+    .replace(/\s+/g,"_")              // spaces → underscore
+    .replace(/_+/g,"_")               // collapse underscores
+    .replace(/^_|_$/g,"");            // trim edges
+}
+
+function getPDFSignature(){
+  const now = new Date();
+  const dateStr = now.getFullYear()+"/"+String(now.getMonth()+1).padStart(2,"0")+"/"+String(now.getDate()).padStart(2,"0");
+  const timeStr = String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+  const approvedLabel = lang==="en"?"Approved by":lang==="ur"?"منظور کنندہ":"تم الاعتماد من قبل";
+  const dateLabel = lang==="en"?"Print Date":lang==="ur"?"تاریخ طباعت":"تاريخ الطباعة";
+  return `<div class="pdf-signature">
+    <div class="pdf-signature-row">
+      <div class="pdf-signature-item">
+        <div class="pdf-signature-label">${approvedLabel}</div>
+        <div class="pdf-signature-value">م. مروان فقيه</div>
+      </div>
+      <div class="pdf-signature-item" style="text-align:center;">
+        <div style="font-size:9pt;color:#888;">${t("companyName")}</div>
+      </div>
+      <div class="pdf-signature-item" style="text-align:${lang==="en"?"right":"left"};">
+        <div class="pdf-signature-label">${dateLabel}</div>
+        <div class="pdf-signature-value">${dateStr} — ${timeStr}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+function printWorkerTable(){
+  const p=getPeriod(periodOffset);
+  const wName=workers[currentUser].name;
+  preparePDFHeader(
+    ["wPdfLogo"],["wPdfTitle"],["wPdfDate"],["wPdfRight"],
+    t("wTableT")+" — "+p.label,"",
+    wName+" | "+roleLabel(workers[currentUser].role)
+  );
+  document.getElementById("wPdfCompany").textContent=t("companyName");
+  const header=document.getElementById("wPdfHeader");
+  const body=document.getElementById("wTableBody");
+  let pt=document.getElementById("printTarget");
+  if(!pt){pt=document.createElement("div");pt.id="printTarget";document.body.appendChild(pt);}
+  pt.innerHTML=header.outerHTML+body.innerHTML+getPDFSignature();
+  pt.style.display="block";
+  const prevTitle=document.title;
+  document.title=safeFileName(wName+"_"+p.label);
+  setTimeout(()=>{window.print();setTimeout(()=>{pt.style.display="none";pt.innerHTML="";document.title=prevTitle;},600);},400);
+}
+
+function printSOTable(statusFilter){
+  const p=getPeriod(periodOffset);
+  const label=statusFilter==="pending"?t("sPendTitle"):t("sApprTitle");
+  const workerNames=getSOSelected().map(k=>workers[k]?.name).filter(Boolean).join("_");
+  preparePDFHeader(
+    ["sPdfLogo"],["sPdfTitle"],["sPdfDate"],["sPdfRight"],
+    label+" — "+p.label,"", workerNames.replace(/_/g,", ")
+  );
+  document.getElementById("sPdfCompany").textContent=t("companyName");
+  const header=document.getElementById("sPdfHeader");
+  const bodyEl=document.getElementById(statusFilter==="pending"?"sPendBody":"sApprBody");
+  let pt=document.getElementById("printTarget");
+  if(!pt){pt=document.createElement("div");pt.id="printTarget";document.body.appendChild(pt);}
+  pt.innerHTML=header.outerHTML+(bodyEl?bodyEl.innerHTML:"")+getPDFSignature();
+  pt.style.display="block";
+  const prevTitle=document.title;
+  document.title=safeFileName(workerNames+"_"+p.label);
+  setTimeout(()=>{window.print();setTimeout(()=>{pt.style.display="none";pt.innerHTML="";document.title=prevTitle;},600);},400);
+}
+// keep old name for backward compat
+function printSupTable(){ printSOTable("approved"); }
+
+// ================================================================
+// PER-WORKER REPORT EXPORT (PDF + Excel)
+// ================================================================
+function printWorkerReport(wk){
+  const wName=workers[wk]?.name||"";
+  const approved=reportData.filter(e=>e.wk===wk&&e.status==="approved");
+  if(!approved.length)return toast(t("toastNoData"));
+
+  const approvedH=approved.reduce((s,e)=>s+e.hours,0);
+  const foodD=approved.filter(e=>e.food).length;
+
+  // Build header
+  document.getElementById("rPdfLogo").src=LOGO_SRC;
+  document.getElementById("rPdfCompany").textContent=t("companyName");
+  document.getElementById("rPdfTitle").textContent=reportMeta.title+" | "+reportMeta.range;
+  document.getElementById("rPdfDate").textContent=t("generatedOn")+": "+getTodayStr();
+  document.getElementById("rPdfRight").textContent=wName+" — "+roleLabel(workers[wk].role);
+  const header=document.getElementById("rPdfHeader");
+
+  // Build table for this worker only (approved entries)
+  const rows=approved.map(e=>[
+    e.date, fmtTimeRange(e), e.project, cityLabel(e.city), e.hours,
+    e.food?"✓":"—", e.notes||"—"
+  ]);
+  const tot=Array(7).fill("");
+  tot[0]=t("totalLbl");
+  tot[4]=approvedH+" "+t("hoursU");
+  tot[5]=foodD+" "+t("foodU");
+  tot[6]=approved.length+" "+t("workU");
+
+  const workerHeader=`<div style="background:#E6F1FB;border-radius:8px;padding:12px 18px;margin-bottom:12px;">
+    <div style="font-size:15pt;font-weight:800;color:#185FA5;">${wName}</div>
+    <div style="font-size:10pt;color:#444;margin-top:2px;">${roleLabel(workers[wk].role)}</div>
+  </div>`;
+
+  const tableHtml=buildTable(
+    [t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thNotes")],
+    rows, tot
+  );
+
+  let pt=document.getElementById("printTarget");
+  if(!pt){pt=document.createElement("div");pt.id="printTarget";document.body.appendChild(pt);}
+  pt.innerHTML=header.outerHTML+workerHeader+tableHtml+getPDFSignature();
+  pt.style.display="block";
+
+  const prevTitle=document.title;
+  document.title=safeFileName(wName+"_"+reportMeta.range);
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{pt.style.display="none";pt.innerHTML="";document.title=prevTitle;},600);
+  },400);
+}
+
+function exportWorkerRepExcel(wk){
+  const wName=workers[wk]?.name||"";
+  const approved=reportData.filter(e=>e.wk===wk&&e.status==="approved");
+  if(!approved.length)return toast(t("toastNoData"));
+  const approvedH=approved.reduce((s,e)=>s+e.hours,0);
+  const foodD=approved.filter(e=>e.food).length;
+
+  const data=[];
+  data.push([t("companyName")]);
+  data.push([wName+" — "+roleLabel(workers[wk].role)]);
+  data.push([reportMeta.title+" | "+reportMeta.range]);
+  data.push([]);
+  data.push([t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thNotes")]);
+  approved.forEach(e=>{
+    data.push([e.date,fmtTimeRange(e),e.project,cityLabel(e.city),e.hours,e.food?"✓":"—",e.notes||""]);
+  });
+  data.push([t("totalLbl"),"","","",approvedH+" "+t("hoursU"),foodD+" "+t("foodU"),approved.length+" "+t("workU")]);
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"]=[{wch:14},{wch:14},{wch:22},{wch:14},{wch:10},{wch:10},{wch:24}];
+  XLSX.utils.book_append_sheet(wb,ws,wName.slice(0,31));
+  XLSX.writeFile(wb, wName+"_"+reportMeta.range.replace(/\s/g,"").replace(/–|-/g,"_to_")+".xlsx");
+  toast(t("toastExp"));
+}
+
+function printReport(){
+  const header=document.getElementById("rPdfHeader");
+  const body=document.getElementById("repTableBody");
+  if(!header||!body)return;
+  document.getElementById("rPdfCompany").textContent=t("companyName");
+  let pt=document.getElementById("printTarget");
+  if(!pt){pt=document.createElement("div");pt.id="printTarget";document.body.appendChild(pt);}
+  pt.innerHTML=header.outerHTML+body.innerHTML+getPDFSignature();
+  pt.style.display="block";
+  pt.querySelectorAll(".worker-section-header").forEach(el=>el.style.display="block");
+  const prevTitle=document.title;
+  // filename: WorkerName(s)_FromDate_ToDate
+  const wNames=reportMeta.workers.replace(/،|,/g,"_").replace(/\s+/g,"");
+  document.title=safeFileName(wNames+"_"+reportMeta.range);
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{pt.style.display="none";pt.innerHTML="";document.title=prevTitle;},600);
+  },400);
+}
+
+function printMyReport(){
+  const rangeLabel=window._myRepData?.rangeLabel||"";
+  const wName=workers[currentUser].name;
+  preparePDFHeader(
+    ["wPdfLogo"],["wPdfTitle"],["wPdfDate"],["wPdfRight"],
+    t("wTableT")+" — "+rangeLabel,"",wName
+  );
+  document.getElementById("wPdfCompany").textContent=t("companyName");
+  const header=document.getElementById("wPdfHeader");
+  const body=document.getElementById("myRepTable");
+  let pt=document.getElementById("printTarget");
+  if(!pt){pt=document.createElement("div");pt.id="printTarget";document.body.appendChild(pt);}
+  pt.innerHTML=header.outerHTML+(body?body.innerHTML:"")+getPDFSignature();
+  pt.style.display="block";
+  const prevTitle=document.title;
+  document.title=safeFileName(wName+"_"+rangeLabel);
+  setTimeout(()=>{window.print();setTimeout(()=>{pt.style.display="none";pt.innerHTML="";document.title=prevTitle;},600);},400);
+}
+
+// ================================================================
+// EXCEL EXPORTS
+// ================================================================
+function exportWExcel(){
+  const p=getPeriod(periodOffset),list=getEnt(currentUser,p.key);
+  if(!list.length)return toast(t("toastNoData"));
+  const h=[t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus"),t("thNotes")];
+  const r=list.map(e=>[e.date,fmtTimeRange(e),e.project,cityLabel(e.city),e.hours,e.food?"✓":"—",stLabel(e.status),e.notes||""]);
+  const th=list.reduce((s,e)=>s+e.hours,0),fd=list.filter(e=>e.food).length;
+  exportXLS([h,...r,[t("totalLbl"),"","","",th+" "+t("hoursU"),fd+" "+t("foodU"),list.length+" "+t("workU"),""]],workers[currentUser].name,workers[currentUser].name+"_"+p.label);
+}
+function exportSExcel(statusFilter){
+  const p=getPeriod(periodOffset);
+  const selWks=getSOSelected();
+  let all=[];
+  Object.keys(workers).forEach(wk=>{
+    if(!selWks.includes(wk))return;
+    getEnt(wk,p.key).forEach(e=>all.push({...e,wk,wName:workers[wk].name,wRole:workers[wk].role}));
+  });
+  const filtered=statusFilter?all.filter(e=>e.status===statusFilter):all;
+  if(!filtered.length)return toast(t("toastNoData"));
+
+  // Build Excel grouped by worker — worker name as section header row, no worker/role columns
+  const wb=XLSX.utils.book_new();
+  const groups={},order=[];
+  filtered.forEach(e=>{
+    if(!groups[e.wk]){groups[e.wk]={name:e.wName,role:e.wRole,rows:[]};order.push(e.wk);}
+    groups[e.wk].rows.push(e);
+  });
+
+  const label=statusFilter==="pending"?t("sPendTitle"):statusFilter==="approved"?t("sApprTitle"):t("allEmp");
+  const data=[];
+  let grandH=0,grandF=0,grandD=0;
+  order.forEach(wk=>{
+    const g=groups[wk];
+    // Worker header
+    data.push([g.name+" — "+roleLabel(g.role)]);
+    // Column headers
+    data.push([t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus"),t("thNotes")]);
+    // Rows
+    g.rows.forEach(e=>{
+      data.push([e.date,fmtTimeRange(e),e.project,cityLabel(e.city),e.hours,e.food?"✓":"—",stLabel(e.status),e.notes||""]);
+    });
+    const apH=g.rows.filter(e=>e.status==="approved").reduce((s,e)=>s+e.hours,0);
+    const fD=g.rows.filter(e=>e.food).length;
+    grandH+=apH; grandF+=fD; grandD+=g.rows.length;
+    data.push([t("totalLbl"),"","","",apH+" "+t("hoursU"),fD+" "+t("foodU"),g.rows.length+" "+t("workU"),""]);
+    data.push([]); // spacer
+  });
+  if(order.length>1){
+    data.push([t("totalLbl")+" — "+t("allEmp"),"","",grandH+" "+t("hoursU"),grandF+" "+t("foodU"),grandD+" "+t("workU")]);
+  }
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"]=[{wch:14},{wch:14},{wch:22},{wch:14},{wch:10},{wch:10},{wch:16},{wch:24}];
+  XLSX.utils.book_append_sheet(wb,ws,label.slice(0,31));
+  XLSX.writeFile(wb,label+"_"+p.label+".xlsx");
+  toast(t("toastExp"));
+}
+function exportRepExcel(){
+  if(!reportData.length)return toast(t("toastNoData"));
+  const h=[t("thWorker"),t("thRole"),t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus")];
+  const r=reportData.map(e=>[e.wName,roleLabel(e.wRole),e.date,fmtTimeRange(e),e.project,cityLabel(e.city),e.hours,e.food?"✓":"—",stShort(e.status)]);
+  const th=reportData.filter(e=>e.status==="approved").reduce((s,e)=>s+e.hours,0),fd=reportData.filter(e=>e.food).length;
+  exportXLS([h,...r,[t("totalLbl"),"","","","",th+" "+t("hoursU"),fd+" "+t("foodU"),reportData.length+" "+t("workU")]],reportMeta.title,"Report_"+reportMeta.range);
+}
+function exportMyRepExcel(){
+  const d=window._myRepData;if(!d||!d.data.length)return toast(t("toastNoData"));
+  const h=[t("thDate"),t("thTime"),t("thProject"),t("thCity"),t("thHours"),t("thFood"),t("thStatus")];
+  const r=d.data.map(e=>[e.date,e.project,cityLabel(e.city),e.hours,e.food?"✓":"—",stLabel(e.status)]);
+  exportXLS([h,...r,[t("totalLbl"),"","",d.totalH+" "+t("hoursU"),d.foodD+" "+t("foodU"),d.data.length+" "+t("workU")]],d.workerName,d.workerName+"_"+d.rangeLabel);
+}
+function exportXLS(data,sheetName,fileName){
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb,ws,sheetName.slice(0,31));
+  XLSX.writeFile(wb,fileName+".xlsx");
+  toast(t("toastExp"));
+}
+
+// TOAST
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2500);}
+
+// ================================================================
+// INIT — load from Supabase then show login
+// ================================================================
+async function init(){
+  // Apply language and show login screen IMMEDIATELY (no loading block)
+  setLang(lang);
+  buildCitySel("entryCity");
+  buildCitySel("editCity");
+  buildCitySel("weCity");
+
+  // Show a small spinner only on the login button, not full overlay
+  const btn = document.getElementById("btnLogin");
+  if(btn){ btn.textContent = "..."; btn.disabled = true; }
+
+  try {
+    const ok = await Promise.race([
+      loadAll(),
+      new Promise(resolve => setTimeout(() => resolve(false), 8000))
+    ]);
+    if(ok){
+      buildWorkerSel();
+    } else {
+      if(SUPABASE_URL === "YOUR_SUPABASE_URL"){
+        showDbError("⚙️ ضع SUPABASE_URL و SUPABASE_KEY في الكود أولاً");
+      } else {
+        showDbError("❌ تعذّر الاتصال — تحقق من اتصال الإنترنت وأعد تحميل الصفحة");
+      }
+    }
+  } catch(e){
+    console.error("Init error:", e);
+    showDbError("❌ خطأ في التحميل — أعد تحميل الصفحة");
+  } finally {
+    // Always restore the login button
+    if(btn){ btn.textContent = t("btnLogin"); btn.disabled = false; }
+    showLoading(false);
+  }
+}
+init();
+</script>
+</body>
+</html>
